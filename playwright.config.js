@@ -11,6 +11,8 @@ export default defineConfig({
     video: 'on',            // every run is recorded; the pipeline harvests these as before/after
     viewport: { width: 900, height: 640 },
     trace: 'off',
+    // the pipeline slows single-spec runs down so the before/after videos are watchable (see runner.js)
+    launchOptions: { slowMo: Number(process.env.TICKETFIX_SLOWMO) || 0 },
   },
   webServer: {
     command: 'node app/server.js',

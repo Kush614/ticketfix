@@ -14,7 +14,8 @@ export function runPlaywright(root, spec, { label = 'run' } = {}) {
   const r = spawnSync('npx', args, {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: 'out/last-run.json', CI: '1' },
+    // single-spec runs are the recorded before/after videos the verifier watches: at full speed they are ~1s long
+    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: 'out/last-run.json', CI: '1', TICKETFIX_SLOWMO: spec ? (process.env.TICKETFIX_SLOWMO || '500') : '0' },
   });
   const output = (r.stdout || '') + (r.stderr || '');
   let results = null;
