@@ -29,8 +29,12 @@ const logged = m => { log(m); stageLog.push(m); };
 try {
   logged(`🎫 ${ticketId}  model=${MODEL}${isMock ? '  (MOCK MODE)' : ''}`);
   const videoPart = await uploadVideo(videoPath);
+  // optional customer message next to the video: tickets/<id>.txt
+  const notePath = videoPath.replace(/\.[^.]+$/, '.txt');
+  const note = fs.existsSync(notePath) ? fs.readFileSync(notePath, 'utf8').trim() : '';
+  if (note) logged(`💬 customer wrote: "${note}"`);
 
-  const bug = await analyze({ root, videoPart, log: logged });
+  const bug = await analyze({ root, videoPart, note, log: logged });
   const rep = await reproduce({ root, videoPart, bug, ticketId, log: logged });
   let fx = await fix({ root, bug, specRel: rep.specRel, spec: rep.spec, log: logged });
   let verdict = await verify({ bug, originalVideoPart: videoPart, afterVideoPath: fx.afterVideo, diff: fx.diff, log: logged });

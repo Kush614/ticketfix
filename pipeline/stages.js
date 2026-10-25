@@ -7,11 +7,11 @@ import * as P from './prompts.js';
 
 const MAX_TRIES = Number(process.env.TICKETFIX_MAX_TRIES || 3);
 
-export async function analyze({ root, videoPart, log }) {
+export async function analyze({ root, videoPart, note, log }) {
   log('👁  Argon is watching the recording and reading the repo…');
   const text = await ask({
     system: P.SYSTEM,
-    parts: [videoPart, { text: P.ANALYZE }, { text: snapshot(root) }],
+    parts: [videoPart, ...(note ? [{ text: P.CUSTOMER_NOTE(note) }] : []), { text: P.ANALYZE }, { text: snapshot(root) }],
     json: true,
     mockKey: 'analyze',
   });

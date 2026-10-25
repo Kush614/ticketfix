@@ -1,28 +1,21 @@
 // Taskly — minimal todo app.
-// State lives in memory + localStorage. Rendering is a full re-draw.
+// State is loaded from the server once, kept in memory, and every change is sent back to the API.
+// Rendering is a full re-draw.
 
-const STORAGE_KEY = 'taskly.todos';
-
-let todos = load();
+let todos = [];
 let filter = 'all';
-let nextId = todos.reduce((m, t) => Math.max(m, t.id), 0) + 1;
 
 const listEl = document.getElementById('list');
 const formEl = document.getElementById('add-form');
 const inputEl = document.getElementById('new-todo');
 const filterBtns = Array.from(document.querySelectorAll('.filters button'));
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+const api = (url, method = 'GET', body) =>
+  fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
 
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); } catch {}
+async function load() {
+  todos = await api('/api/todos').then(r => r.json());
+  render();
 }
 
 function visibleTodos() {
@@ -31,24 +24,25 @@ function visibleTodos() {
   return todos;
 }
 
-function addTodo(title) {
-  todos.push({ id: nextId++, title, done: false });
-  save();
+async function addTodo(title) {
+  const todo = await api('/api/todos', 'POST', { title }).then(r => r.json());
+  todos.push(todo);
   render();
 }
 
 function toggleTodo(id) {
   const t = todos.find(t => t.id === id);
-  if (t) t.done = !t.done;
-  save();
+  if (!t) return;
+  t.done = !t.done;
   render();
+  api(`/api/todos/${id}`, 'PATCH', { done: t.done });
 }
 
 function deleteTodo(index) {
   // Remove the todo at this position in the list.
-  todos.splice(index, 1);
-  save();
+  const [t] = todos.splice(index, 1);
   render();
+  api(`/api/todos/${t.id}`, 'DELETE');
 }
 
 function setFilter(next) {
@@ -104,4 +98,4 @@ formEl.addEventListener('submit', e => {
 
 filterBtns.forEach(b => b.addEventListener('click', () => setFilter(b.dataset.filter)));
 
-render();
+load();

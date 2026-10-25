@@ -5,6 +5,9 @@ You receive (1) a customer's screen recording and (2) the complete source of the
 You work in strict, verifiable steps and ALWAYS respond with the JSON schema requested.
 Never guess at what the video shows — describe concrete UI states and timestamps you observed.`;
 
+export const CUSTOMER_NOTE = (note) => `The customer's message on the ticket (their words — no repro steps; the video is the evidence):
+"${note}"`;
+
 export const ANALYZE = `Watch the customer's screen recording end to end, then read the whole repository.
 
 Produce a precise bug report as JSON:
