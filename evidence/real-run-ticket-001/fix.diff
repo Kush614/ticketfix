@@ -1,5 +1,5 @@
 diff --git a/app/public/app.js b/app/public/app.js
-index 6ff468a..290b7d0 100644
+index 6ff468a..163eac3 100644
 --- a/app/public/app.js
 +++ b/app/public/app.js
 @@ -44,9 +44,8 @@ function toggleTodo(id) {
@@ -14,6 +14,15 @@ index 6ff468a..290b7d0 100644
    save();
    render();
  }
+@@ -67,7 +66,7 @@ function render() {
+     listEl.appendChild(li);
+     return;
+   }
+-  items.forEach((t, i) => {
++  items.forEach(t => {
+     const li = document.createElement('li');
+     li.dataset.id = String(t.id);
+     if (t.done) li.classList.add('done');
 @@ -86,7 +85,7 @@ function render() {
      del.className = 'del';
      del.textContent = '×';

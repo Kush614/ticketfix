@@ -1,45 +1,45 @@
 {
   "ticketId": "ticket-001",
   "bug": {
-    "title": "Deleting a todo in the Active filter removes the wrong item",
+    "title": "Deleting a todo while filtered removes the wrong item from the underlying list",
     "observed_steps": [
-      "00:01 — User enters 'Buy milk' and clicks Add",
-      "00:02 — User enters 'Walk dog' and clicks Add",
-      "00:03 — User enters 'Pay rent' and clicks Add",
-      "00:05 — User checks 'Buy milk' as done",
+      "00:01 — User adds todo 'Buy milk'",
+      "00:02 — User adds todo 'Walk dog'",
+      "00:04 — User adds todo 'Pay rent'",
+      "00:05 — User checks 'Buy milk' to mark it done",
       "00:06 — User clicks the 'Active' filter button, showing 'Walk dog' and 'Pay rent'",
-      "00:07 — User clicks the delete (×) button on 'Pay rent'",
+      "00:07 — User clicks the delete ('×') button on 'Pay rent' (the second visible item in Active view)",
       "00:09 — User clicks the 'All' filter button"
     ],
-    "expected": "Clicking delete (×) on 'Pay rent' while in the Active filter should delete 'Pay rent', leaving 'Walk dog' visible in the Active view and both 'Buy milk' and 'Walk dog' visible in the All view.",
-    "actual": "Clicking delete on 'Pay rent' removes 'Walk dog' instead. 'Pay rent' remains in the Active view (00:07), and switching to the All view (00:09) shows 'Buy milk' (done) and 'Pay rent' — 'Walk dog' was deleted.",
+    "expected": "Clicking delete on 'Pay rent' while in the 'Active' filter should delete 'Pay rent', leaving 'Buy milk' (done) and 'Walk dog' (active) when switching back to 'All'.",
+    "actual": "In the 'Active' view at 00:07, 'Walk dog' disappeared instead of 'Pay rent' (leaving only 'Pay rent' visible). Wait—actually at 00:07 'Pay rent' remains visible and 'Walk dog' is gone! And when switching to 'All' at 00:09, 'Buy milk' and 'Pay rent' are present while 'Walk dog' was deleted.",
     "evidence_timestamps": [
-      "00:05 — 'Buy milk' is checked as done above 'Walk dog' and 'Pay rent' in the All view",
-      "00:06 — Active filter is selected; list displays 'Walk dog' and 'Pay rent'",
-      "00:07 — After clicking delete on 'Pay rent', 'Walk dog' disappears and only 'Pay rent' remains in the Active list",
-      "00:09 — Switching back to All shows 'Buy milk' (done) and 'Pay rent'; 'Walk dog' is completely gone"
+      "00:05 — 'Buy milk' is marked done (index 0 in todos), 'Walk dog' is index 1, 'Pay rent' is index 2",
+      "00:06 — 'Active' filter selected; visible items are 'Walk dog' (visible index 0) and 'Pay rent' (visible index 1)",
+      "00:07 — After clicking delete on 'Walk dog' or 'Pay rent', only 'Pay rent' remains in the Active list",
+      "00:09 — Switching back to 'All' shows 'Buy milk' and 'Pay rent'; 'Walk dog' (index 1 in the full todos array) was removed instead of the intended item"
     ],
     "suspected_files": [
       "app/public/app.js"
     ],
-    "root_cause_hypothesis": "In `app/public/app.js`, `render()` (lines 58-91) iterates over `visibleTodos()` and attaches a click listener on each delete button that calls `deleteTodo(i)` (line 87), where `i` is the item's index in the filtered `visibleTodos()` array. However, `deleteTodo(index)` (lines 45-50) calls `todos.splice(index, 1)` directly on the unfiltered `todos` array. When the 'Active' or 'Done' filter hides earlier todos (like completed 'Buy milk' at index 0), the filtered index `i` no longer matches the index in `todos`, causing `splice` to remove the wrong item. `deleteTodo` should accept the todo's `id` (`t.id`) and remove the matching item by ID, just like `toggleTodo(id)` does on lines 38-43.",
-    "confidence": 0.99
+    "root_cause_hypothesis": "In `app/public/app.js`, `render()` iterates over the filtered array `visibleTodos()` with `items.forEach((t, i) => ...)` and binds the delete button click handler to `deleteTodo(i)` (line 88), passing the index `i` within the filtered `items` array rather than the todo's unique `t.id`. `deleteTodo(index)` (lines 47-52) then executes `todos.splice(index, 1)` on the unfiltered `todos` array. When a filter is active (e.g., 'Buy milk' at index 0 is done, so 'Active' shows 'Walk dog' at visible index 0 and 'Pay rent' at visible index 1), clicking delete on 'Pay rent' passes `i = 1`, causing `todos.splice(1, 1)` to delete 'Walk dog' instead of 'Pay rent' (or clicking delete on 'Walk dog' at `i = 0` would delete 'Buy milk'). `deleteTodo` should accept `id` and filter/find by `t.id` just like `toggleTodo(id)` does.",
+    "confidence": 1
   },
   "verdict": {
     "verdict": "fixed",
-    "original_video_summary": "The user added three todos ('Buy milk', 'Walk dog', 'Pay rent' at 00:01–00:04), marked 'Buy milk' as done (00:05), switched to the 'Active' filter where 'Walk dog' and 'Pay rent' were displayed (00:06), and clicked the delete (×) button on 'Pay rent' (00:07). Instead of deleting 'Pay rent', 'Walk dog' was removed and 'Pay rent' stayed in the list (00:07), which was confirmed when switching back to the 'All' view (00:09).",
-    "fixed_video_summary": "The automated test executed the exact reproduction scenario (adding 'Buy milk', 'Walk dog', and 'Pay rent', marking 'Buy milk' complete, switching to 'Active', and deleting 'Pay rent'). At 00:00 of the new recording, the 'Active' view is shown with 'Pay rent' properly deleted and 'Walk dog' remaining in the list.",
-    "comparison": "In the original recording at 00:07, after deleting 'Pay rent' in the 'Active' filter, 'Walk dog' was erroneously removed while 'Pay rent' remained visible. In the fixed build recording at 00:00, the 'Active' filter shows 'Walk dog' remaining in the list and 'Pay rent' removed as expected.",
-    "pr_description": "## Context\nWhen viewing a filtered list of todos (such as 'Active' or 'Done'), clicking the delete (`×`) button on a todo item removed the wrong item from the list if any preceding items were hidden by the active filter.\n\n## Root Cause\nIn `app/public/app.js`, `render()` iterated over `visibleTodos()` and bound each delete button to `deleteTodo(i)`, where `i` was the index within the filtered array. However, `deleteTodo(index)` called `todos.splice(index, 1)` on the unfiltered `todos` array, causing an index mismatch whenever earlier todos were filtered out.\n\n## Fix\nUpdated `deleteTodo` to accept the todo's unique `id` (`t.id`) and filter `todos` by `t.id !== id`, matching how `toggleTodo(id)` identifies items.\n\n## Verification\nVerified via an automated Playwright test reproducing the customer steps: created 'Buy milk', 'Walk dog', and 'Pay rent', marked 'Buy milk' as done, switched to the 'Active' filter, and clicked delete on 'Pay rent'. Confirmed that 'Pay rent' is removed and 'Walk dog' remains."
+    "original_video_summary": "The user added three todos ('Buy milk', 'Walk dog', 'Pay rent'), marked 'Buy milk' as done (00:05), switched to the 'Active' filter showing 'Walk dog' and 'Pay rent' (00:06), and clicked delete on 'Pay rent' (00:07). Instead of 'Pay rent' being deleted, 'Walk dog' disappeared leaving 'Pay rent' visible, and switching back to 'All' at 00:09 showed 'Buy milk' and 'Pay rent'.",
+    "fixed_video_summary": "The automated test executed the reproduction steps (adding the three todos, marking 'Buy milk' done, switching to the 'Active' filter, and deleting 'Pay rent'). At 00:00 of the new recording, the 'Active' filter view correctly displays 'Walk dog' as the remaining active item after 'Pay rent' was deleted.",
+    "comparison": "In the original recording at 00:07-00:08, under the 'Active' filter after deleting 'Pay rent', 'Walk dog' was erroneously removed and 'Pay rent' remained on screen. In the fixed build recording at 00:00, under the 'Active' filter, 'Pay rent' is gone and 'Walk dog' correctly remains on screen.",
+    "pr_description": "## Context\nWhen viewing a filtered list of todos (e.g., `Active` or `Done`), clicking the delete (`×`) button on a todo item removed the wrong item from the underlying `todos` list.\n\n## Root Cause\nIn `app/public/app.js`, `render()` iterated over the filtered `visibleTodos()` array (`items.forEach((t, i) => ...)`) and bound the delete click handler to `deleteTodo(i)`, passing the index within the filtered view rather than the todo's unique ID. `deleteTodo(index)` then called `todos.splice(index, 1)` on the unfiltered `todos` array, causing an index mismatch whenever any filter hid preceding items.\n\n## Fix\n- Updated `deleteTodo(id)` to accept the todo's unique `id` and filter `todos` via `todos = todos.filter(t => t.id !== id)`.\n- Updated the delete button event listener in `render()` to call `deleteTodo(t.id)`.\n\n## Verification\nVerified with an automated Playwright test reproducing the customer scenario: adding 'Buy milk', 'Walk dog', and 'Pay rent', marking 'Buy milk' done, filtering by 'Active', and deleting 'Pay rent'. Confirmed that 'Pay rent' is removed while 'Walk dog' and 'Buy milk' remain intact."
   },
-  "rationale": "In `render()`, the delete button's click handler passed the index `i` from the filtered `visibleTodos()` array to `deleteTodo()`, which then spliced the unfiltered `todos` array at that index. When an Active or Done filter hid earlier todos, the filtered index did not match the unfiltered array index, deleting the wrong item. Changing `deleteTodo` to accept the todo's `id` and filter `todos` by `t.id !== id` (matching `toggleTodo(t.id)`) ensures the exact clicked item is removed regardless of active filter.",
+  "rationale": "In `app/public/app.js`, `render()` passed the index `i` from the filtered `visibleTodos()` list to `deleteTodo(index)`, which then spliced that index from the unfiltered `todos` array. When a filter like 'Active' or 'Done' hid items, the filtered index did not match the item's position in `todos`, causing the wrong todo to be deleted. Updating `deleteTodo` to accept the todo's unique `id` and passing `t.id` from the delete button click handler ensures the exact todo is removed regardless of the active filter.",
   "prUrl": null,
   "log": [
     "🎫 ticket-001  model=gemini-4-argon",
     "👁  Argon is watching the recording and reading the repo…",
-    "   → Deleting a todo in the Active filter removes the wrong item  (confidence 0.99)",
+    "   → Deleting a todo while filtered removes the wrong item from the underlying list  (confidence 1)",
     "🧪 Writing reproduction test (attempt 1/3)…",
-    "   ✓ test FAILS on current code (good) — Deleting 'Pay rent' while viewing the Active filter removes 'Pay rent' and preserves 'Walk dog' and 'Buy milk'.",
+    "   ✓ test FAILS on current code (good) — Deleting 'Pay rent' while viewing the 'Active' filter removes 'Pay rent' and preserves 'Walk dog' and 'Buy milk'.",
     "🔧 Writing fix (attempt 1/3)…",
     "   edited: app/public/app.js",
     "   ✓ repro test passes, full suite green",
@@ -47,5 +47,5 @@
     "   → verdict: fixed",
     "📦 PR package written to out/pr/ticket-001/"
   ],
-  "seconds": 62.494
+  "seconds": 61.552
 }
