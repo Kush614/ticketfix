@@ -44,9 +44,8 @@ function toggleTodo(id) {
   render();
 }
 
-function deleteTodo(index) {
-  // Remove the todo at this position in the list.
-  todos.splice(index, 1);
+function deleteTodo(id) {
+  todos = todos.filter(t => t.id !== id);
   save();
   render();
 }
@@ -67,7 +66,7 @@ function render() {
     listEl.appendChild(li);
     return;
   }
-  items.forEach((t, i) => {
+  items.forEach(t => {
     const li = document.createElement('li');
     li.dataset.id = String(t.id);
     if (t.done) li.classList.add('done');
@@ -86,7 +85,7 @@ function render() {
     del.className = 'del';
     del.textContent = '×';
     del.setAttribute('aria-label', `Delete ${t.title}`);
-    del.addEventListener('click', () => deleteTodo(i));
+    del.addEventListener('click', () => deleteTodo(t.id));
 
     li.append(cb, span, del);
     listEl.appendChild(li);
