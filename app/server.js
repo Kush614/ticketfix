@@ -22,7 +22,8 @@ app.post('/api/todos', (req, res) => {
 });
 
 app.patch('/api/todos/:id', (req, res) => {
-  const todo = todos.find(t => t.id === req.params.id);
+  const id = Number(req.params.id);
+  const todo = todos.find(t => t.id === id);
   if (!todo) return res.status(404).json({ error: 'not found' });
   if (typeof req.body.done === 'boolean') todo.done = req.body.done;
   res.json(todo);
