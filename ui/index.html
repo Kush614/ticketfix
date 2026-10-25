@@ -3,91 +3,251 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>TicketFix</title>
+<title>TicketFix Studio</title>
+<link rel="icon" href="data:," />
 <style>
-  :root { --bg:#0f1115; --card:#181b22; --line:#2a2e38; --text:#e8e8ea; --muted:#8b8f98; --accent:#6ea8fe; --ok:#5fd38d; --bad:#ff6b6b; }
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2e38; --text:#e8e8ea; --muted:#8b8f98; --accent:#6ea8fe; --ok:#5fd38d; --bad:#ff6b6b; --rec:#ff4d5e; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; }
-  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
-  h1 { margin:0; font-size:26px; } h1 span { color:var(--accent); }
-  .sub { color:var(--muted); margin:4px 0 20px; }
-  .drop { border:2px dashed var(--line); border-radius:12px; padding:28px; text-align:center; color:var(--muted); cursor:pointer; }
-  .drop.over { border-color:var(--accent); color:var(--text); }
-  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:14px 0; }
-  select, button { font:inherit; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); }
-  button.go { background:var(--accent); color:#06101f; border:0; font-weight:600; cursor:pointer; }
+  main { max-width:1280px; margin:0 auto; padding:20px 16px 64px; }
+  header { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:18px; }
+  h1 { margin:0; font-size:26px; } h1 span { color:var(--accent); } h1 small { color:var(--muted); font-weight:500; font-size:16px; }
+  header .sub { color:var(--muted); flex:1 1 320px; margin:0; }
+  .grid { display:grid; grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); gap:16px; align-items:start; }
+  @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .card h2 { margin:0 0 10px; font-size:15px; color:var(--muted); font-weight:600; letter-spacing:.02em; }
+  .card h2 b { color:var(--text); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0; }
+  select, button, textarea { font:inherit; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:#0f1218; color:var(--text); }
+  button { cursor:pointer; }
+  button.go { background:var(--accent); color:#06101f; border:0; font-weight:700; padding:10px 18px; }
+  button.rec { border-color:#5a2730; color:#ffb3bb; }
+  button.rec.on { background:var(--rec); color:#fff; border-color:var(--rec); }
+  button.seg { padding:6px 10px; } button.seg[aria-pressed=true] { background:#243049; color:var(--accent); border-color:#34446a; }
   button:disabled { opacity:.5; cursor:default; }
+  textarea { width:100%; min-height:64px; resize:vertical; }
   label { color:var(--muted); }
-  pre#log { background:#0a0c10; border:1px solid var(--line); border-radius:10px; padding:14px; min-height:120px; max-height:420px; overflow:auto; white-space:pre-wrap; font:13px/1.55 ui-monospace, Menlo, monospace; }
-  .vids { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin:18px 0; }
-  .vids figure { margin:0; background:var(--card); border-radius:10px; padding:10px; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:99px; font-size:13px; font-weight:600; background:#222632; color:var(--muted); }
+  .pill.bug { background:#3a1a1a; color:#ffb3bb; } .pill.fixed { background:#163323; color:var(--ok); }
+  .pill .dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
+  .stage { display:flex; justify-content:center; background:#0a0c10; border-radius:10px; padding:10px; }
+  .stage iframe { width:100%; height:600px; border:0; border-radius:8px; background:var(--bg); transition:width .25s; }
+  .stage.phone iframe { width:390px; height:700px; }
+  .hint { color:var(--muted); font-size:13px; margin:6px 0 0; }
+  .drop { border:2px dashed var(--line); border-radius:10px; padding:12px; text-align:center; color:var(--muted); cursor:pointer; font-size:14px; }
+  .drop.over { border-color:var(--accent); color:var(--text); }
+  #clip { width:100%; border-radius:8px; background:#000; margin-top:6px; }
+  pre#log { background:#0a0c10; border:1px solid var(--line); border-radius:10px; padding:14px; min-height:110px; max-height:380px; overflow:auto; white-space:pre-wrap; font:13px/1.55 ui-monospace, Menlo, monospace; margin:0; }
+  .vids { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin:14px 0; }
+  .vids figure { margin:0; background:#0f1218; border-radius:10px; padding:10px; }
   .vids figcaption { color:var(--muted); font-size:13px; margin-bottom:6px; }
   video { width:100%; border-radius:6px; background:#000; }
-  .verdict { display:inline-block; padding:3px 10px; border-radius:99px; font-weight:600; }
-  .verdict.fixed { background:#163323; color:var(--ok); } .verdict.other { background:#3a1a1a; color:var(--bad); }
-  #pr { background:var(--card); border-radius:10px; padding:4px 20px 12px; }
+  #pr { background:#0f1218; border-radius:10px; padding:4px 20px 12px; }
   #pr code { background:#0a0c10; padding:1px 5px; border-radius:4px; }
   #pr pre { background:#0a0c10; padding:10px; border-radius:8px; overflow:auto; }
   a { color:var(--accent); }
+  .full { margin-top:16px; }
+  .timer { font-variant-numeric:tabular-nums; }
   [hidden] { display:none !important; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Ticket<span>Fix</span></h1>
-  <p class="sub">Drop a customer's screen recording. Gemini 4 Argon watches it, writes a failing test, fixes the bug, then watches its own fix.</p>
+  <header>
+    <h1>Ticket<span>Fix</span> <small>Studio</small></h1>
+    <p class="sub">Break the app, record it like a customer would, and watch Gemini 4 Argon reproduce, fix and verify it.</p>
+    <button class="rec" id="session-btn" title="Record this whole tab (with your microphone) as a demo video">🎥 Record session</button>
+  </header>
 
-  <div class="drop" id="drop">Drop a .webm / .mp4 recording here, or click to choose<input type="file" id="file" accept="video/webm,video/mp4" hidden /></div>
-  <div class="row">
-    <label>or a sample ticket <select id="sample"></select></label>
-    <label><select id="mode"><option value="real">Real model</option><option value="mock">Mock (canned responses)</option></select></label>
-    <label><input type="checkbox" id="open-pr" /> open a GitHub PR</label>
-    <button class="go" id="run">Run</button>
+  <div class="grid">
+    <section class="card">
+      <h2><b>1 · The app</b> — Taskly, running live</h2>
+      <div class="row">
+        <button class="seg" id="view-desktop" aria-pressed="true">🖥 Desktop</button>
+        <button class="seg" id="view-phone" aria-pressed="false">📱 Phone</button>
+        <span id="app-state" class="pill"><span class="dot"></span>…</span>
+        <span style="flex:1"></span>
+        <button class="rec" id="bug-btn">● Record bug</button>
+        <button id="reset-btn" title="Restore the original app with its bugs">↺ Reset app</button>
+      </div>
+      <div class="stage" id="stage"><iframe id="frame" title="Taskly"></iframe></div>
+      <p class="hint">Try: tick two tasks and refresh · delete under “Active” · on 📱 Phone, add a very long task.</p>
+    </section>
+
+    <section class="card">
+      <h2><b>2 · The ticket</b> — a recording and one line from the customer</h2>
+      <video id="clip" controls muted autoplay loop playsinline hidden></video>
+      <p id="clip-none" class="hint">Record the bug on the left, or drop a recording / pick a sample below.</p>
+      <div class="row">
+        <textarea id="note" placeholder="Customer's message, e.g. “I tick things off, refresh, and they're all unticked again.”"></textarea>
+      </div>
+      <div class="drop" id="drop">Drop a .webm / .mp4 / .mov here<input type="file" id="file" accept="video/*" hidden /></div>
+      <div class="row">
+        <label>or a sample <select id="sample"><option value="">—</option></select></label>
+      </div>
+      <div class="row">
+        <select id="mode"><option value="real">Real model</option><option value="mock">Mock (canned responses)</option></select>
+        <label><input type="checkbox" id="open-pr" /> open a GitHub PR</label>
+        <span style="flex:1"></span>
+        <button class="go" id="run">Fix it →</button>
+      </div>
+    </section>
   </div>
 
-  <pre id="log">Waiting for a ticket…</pre>
-
-  <section id="result" hidden>
-    <p>Verdict: <span id="verdict" class="verdict"></span> <span id="prlink"></span></p>
-    <div class="vids">
-      <figure><figcaption>Customer recording</figcaption><video id="v-ticket" controls muted></video></figure>
-      <figure><figcaption>Before: repro test on the buggy build (fails)</figcaption><video id="v-before" controls muted></video></figure>
-      <figure><figcaption>After: same test on the fixed build (passes)</figcaption><video id="v-after" controls muted></video></figure>
+  <section class="card full">
+    <h2><b>3 · TicketFix at work</b></h2>
+    <pre id="log">Waiting for a ticket…</pre>
+    <div id="result" hidden>
+      <p>Verdict: <span id="verdict" class="pill"></span> <span id="prlink"></span></p>
+      <div class="vids">
+        <figure><figcaption>Customer recording</figcaption><video id="v-ticket" controls muted></video></figure>
+        <figure><figcaption>Before: repro test on the buggy build (fails)</figcaption><video id="v-before" controls muted></video></figure>
+        <figure><figcaption>After: same test on the fixed build (passes)</figcaption><video id="v-after" controls muted></video></figure>
+      </div>
+      <div id="pr"></div>
     </div>
-    <div id="pr"></div>
   </section>
 </main>
 <script>
 const $ = id => document.getElementById(id);
-let file = null;
+let state = {}, file = null;
 
-fetch('/tickets.json').then(r => r.json()).then(list => {
-  $('sample').innerHTML = list.map(n => `<option>${n}</option>`).join('');
-});
+// ---------- app pane ----------
+async function refreshState(reloadFrame) {
+  state = await fetch('/state').then(r => r.json());
+  const s = $('app-state');
+  if (!state.appRunning) { s.className = 'pill bug'; s.innerHTML = `<span class="dot"></span>Taskly not running${state.appError ? ': ' + state.appError : ''}`; }
+  else if (state.appFixed) { s.className = 'pill fixed'; s.innerHTML = '<span class="dot"></span>Patched by TicketFix'; }
+  else { s.className = 'pill bug'; s.innerHTML = '<span class="dot"></span>Original (buggy)'; }
+  const cur = $('sample').value;
+  $('sample').innerHTML = '<option value="">—</option>' + state.tickets.map(n => `<option>${n}</option>`).join('');
+  $('sample').value = state.tickets.includes(cur) ? cur : '';
+  if (!state.real) { $('mode').value = 'mock'; $('mode').options[0].disabled = true; }
+  if (reloadFrame || !$('frame').src) $('frame').src = `${state.appUrl}/?t=${Date.now()}`;
+}
+function setView(phone) {
+  $('stage').classList.toggle('phone', phone);
+  $('view-phone').setAttribute('aria-pressed', String(phone));
+  $('view-desktop').setAttribute('aria-pressed', String(!phone));
+}
+$('view-desktop').onclick = () => setView(false);
+$('view-phone').onclick = () => setView(true);
+$('reset-btn').onclick = async () => {
+  $('reset-btn').disabled = true;
+  const r = await fetch('/reset', { method: 'POST' });
+  if (!r.ok) alert(await r.text());
+  await refreshState(true);
+  $('reset-btn').disabled = false;
+};
 
-const drop = $('drop');
-drop.onclick = () => $('file').click();
-$('file').onchange = e => pick(e.target.files[0]);
-drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
-drop.ondragleave = () => drop.classList.remove('over');
-drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); pick(e.dataTransfer.files[0]); };
-function pick(f) {
-  if (!f) return;
-  file = f;
-  drop.textContent = `🎫 ${f.name} (${(f.size / 1e6).toFixed(1)} MB) — ready`;
+// ---------- screen capture ----------
+// One tab capture is shared: the session recording (whole tab + mic) and the bug recording (cropped to the app).
+let tabStream = null;
+async function tabCapture() {
+  if (tabStream && tabStream.getVideoTracks()[0].readyState === 'live') return tabStream;
+  tabStream = await navigator.mediaDevices.getDisplayMedia({
+    video: { displaySurface: 'browser', frameRate: 30 }, audio: false,
+    preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude',
+  });
+  return tabStream;
+}
+function recorder(stream, onDone) {
+  const type = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+  const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 4e6 });
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => onDone(new Blob(chunks, { type: 'video/webm' }));
+  rec.start(500);
+  return rec;
+}
+const stamp = () => new Date().toTimeString().slice(0, 8).replace(/:/g, '');
+function startTimer(btn, label) {
+  const t0 = Date.now();
+  const id = setInterval(() => { btn.innerHTML = `■ ${label} <span class="timer">${Math.floor((Date.now() - t0) / 1000)}s</span>`; }, 250);
+  return () => clearInterval(id);
 }
 
+// bug recording: crop the tab capture to the Taskly pane (Chrome Region Capture), so the ticket shows only the app
+let bugRec = null, bugTrack = null, stopBugTimer = null;
+$('bug-btn').onclick = async () => {
+  if (bugRec) { bugRec.stop(); return; }
+  try {
+    const track = (await tabCapture()).getVideoTracks()[0].clone();
+    if (window.CropTarget && track.cropTo) {
+      try { await track.cropTo(await CropTarget.fromElement($('frame'))); }
+      catch { console.warn('could not crop to the app pane; recording the whole capture'); }
+    }
+    bugTrack = track;
+    bugRec = recorder(new MediaStream([track]), blob => {
+      bugTrack.stop(); bugRec = null; stopBugTimer();
+      $('bug-btn').classList.remove('on'); $('bug-btn').textContent = '● Record bug';
+      useFile(new File([blob], `ticket-live-${stamp()}.webm`, { type: 'video/webm' }));
+      if (!sessionRec) { tabStream.getTracks().forEach(t => t.stop()); tabStream = null; }
+    });
+    $('bug-btn').classList.add('on');
+    stopBugTimer = startTimer($('bug-btn'), 'Stop');
+  } catch (e) { if (e.name !== 'NotAllowedError') alert('Screen recording failed: ' + e.message); }
+};
+
+// session recording: the whole tab + microphone, downloaded when you stop
+let sessionRec = null, sessionMic = null, stopSessionTimer = null;
+$('session-btn').onclick = async () => {
+  if (sessionRec) { sessionRec.stop(); return; }
+  try {
+    const tab = await tabCapture();
+    sessionMic = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+    const stream = new MediaStream([tab.getVideoTracks()[0], ...(sessionMic ? sessionMic.getAudioTracks() : [])]);
+    sessionRec = recorder(stream, blob => {
+      sessionRec = null; stopSessionTimer();
+      sessionMic?.getTracks().forEach(t => t.stop());
+      if (!bugRec) { tabStream?.getTracks().forEach(t => t.stop()); tabStream = null; }
+      $('session-btn').classList.remove('on'); $('session-btn').textContent = '🎥 Record session';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `ticketfix-session-${stamp()}.webm`; a.click();
+    });
+    $('session-btn').classList.add('on');
+    stopSessionTimer = startTimer($('session-btn'), sessionMic ? 'Stop session · mic on' : 'Stop session');
+  } catch (e) { if (e.name !== 'NotAllowedError') alert('Screen recording failed: ' + e.message); }
+};
+
+// ---------- ticket pane ----------
+function useFile(f) {
+  file = f;
+  $('sample').value = '';
+  $('clip').src = URL.createObjectURL(f);
+  $('clip').hidden = false; $('clip-none').hidden = true;
+  $('drop').textContent = `🎫 ${f.name} (${f.size > 1e6 ? (f.size / 1e6).toFixed(1) + ' MB' : Math.ceil(f.size / 1e3) + ' KB'})`;
+}
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+$('file').onchange = e => e.target.files[0] && useFile(e.target.files[0]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && useFile(e.dataTransfer.files[0]); };
+$('sample').onchange = async () => {
+  const n = $('sample').value;
+  if (!n) return;
+  file = null;
+  $('clip').src = `/tickets/${n}`; $('clip').hidden = false; $('clip-none').hidden = true;
+  $('drop').textContent = 'Drop a .webm / .mp4 / .mov here';
+  const txt = await fetch(`/tickets/${n.replace(/\.[^.]+$/, '.txt')}`).then(r => r.ok ? r.text() : '');
+  $('note').value = txt.trim();
+};
+
+// ---------- run ----------
 $('run').onclick = async () => {
   const name = file ? file.name.replace(/[^\w.-]/g, '_') : $('sample').value;
-  if (!name) return;
-  $('run').disabled = true;
+  if (!name) { alert('Record a bug, drop a recording, or pick a sample first.'); return; }
+  $('run').disabled = $('reset-btn').disabled = true;
   $('result').hidden = true;
   $('log').textContent = '';
-  const q = new URLSearchParams({ name, mode: $('mode').value, pr: $("open-pr").checked ? '1' : '0' });
+  const q = new URLSearchParams({ name, mode: $('mode').value, pr: $('open-pr').checked ? '1' : '0', note: $('note').value });
   let text = '';
   try {
     const res = await fetch('/run?' + q, { method: 'POST', body: file || undefined });
     if (!res.ok) throw new Error(await res.text());
+    await refreshState(true);  // the server reset the app before running
     const reader = res.body.getReader(), dec = new TextDecoder();
     for (;;) {
       const { value, done } = await reader.read();
@@ -96,14 +256,16 @@ $('run').onclick = async () => {
       $('log').textContent = text;
       $('log').scrollTop = $('log').scrollHeight;
     }
-    await showResult(name.replace(/\.[^.]+$/, ''), name, text);
+    await refreshState(true);  // Taskly restarted: on the patched build, unless a PR branch took the fix away
+    await showResult(name.replace(/\.[^.]+$/, ''), name);
   } catch (e) {
     $('log').textContent += `\n${e.message}`;
+    await refreshState(true);
   }
-  $('run').disabled = false;
+  $('run').disabled = $('reset-btn').disabled = false;
 };
 
-async function showResult(id, name, log) {
+async function showResult(id, name) {
   const run = await fetch(`/out/pr/${id}/run.json`).then(r => r.ok ? r.json() : null);
   if (!run) return;
   const bust = '?t=' + Date.now();
@@ -112,8 +274,9 @@ async function showResult(id, name, log) {
   $('v-after').src = `/out/pr/${id}/after.webm${bust}`;
   const v = run.verdict.verdict;
   $('verdict').textContent = v;
-  $('verdict').className = 'verdict ' + (v === 'fixed' ? 'fixed' : 'other');
-  $('prlink').innerHTML = run.prUrl ? `· <a href="${run.prUrl}" target="_blank" rel="noopener">${run.prUrl}</a>` : '· no PR opened';
+  $('verdict').className = 'pill ' + (v === 'fixed' ? 'fixed' : 'bug');
+  $('prlink').innerHTML = (run.prUrl ? `· <a href="${run.prUrl}" target="_blank" rel="noopener">${run.prUrl}</a>` : '· no PR opened')
+    + (state.appFixed ? ' · <b>Taskly above is now running the patched build — try it, then ↺ Reset.</b>' : '');
   $('pr').innerHTML = md(await fetch(`/out/pr/${id}/PR.md${bust}`).then(r => r.text()));
   $('result').hidden = false;
   $('result').scrollIntoView({ behavior: 'smooth' });
@@ -139,6 +302,8 @@ function md(src) {
   if (list) out.push('</ul>');
   return out.join('\n');
 }
+
+refreshState();
 </script>
 </body>
 </html>

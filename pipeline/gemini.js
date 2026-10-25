@@ -36,7 +36,7 @@ export async function uploadVideo(filePath) {
     const f = await ai.files.get({ name: cache[sha].name }).catch(() => null);
     if (f?.state === 'ACTIVE') return { fileData: { fileUri: f.uri, mimeType: f.mimeType } };
   }
-  const mimeType = filePath.endsWith('.webm') ? 'video/webm' : 'video/mp4';
+  const mimeType = filePath.endsWith('.webm') ? 'video/webm' : filePath.endsWith('.mov') ? 'video/mov' : 'video/mp4';
   let file = await ai.files.upload({ file: filePath, config: { mimeType } });
   while (file.state === 'PROCESSING') {
     await sleep(2000);

@@ -35,6 +35,21 @@ Each fix touched only the reported bug's file. One early ticket-001 run quietly 
 
 **Demo video (53s):** [`docs/demo.webm`](docs/demo.webm). It shows a real run on the back-end bug sped up 6×, the customer's video next to the fixed build, PR #2 with its "Also noticed" list, and the mobile layout fix.
 
+## TicketFix Studio: the whole demo in one page
+
+```bash
+npm start            # → http://localhost:4180
+```
+
+One server runs everything. It starts Taskly, embeds it in the page, runs the pipeline and restarts Taskly afterwards, so you can click around the fixed build (back-end fixes included).
+
+1. **The app:** Taskly runs live in the left pane. Switch to 📱 Phone for the layout bug.
+2. **● Record bug:** records just the Taskly pane, using Chrome's tab capture cropped to the app. Break something, stop, and type the customer's one-line complaint. You can also drop a `.webm`/`.mp4`/`.mov` or pick a sample ticket.
+3. **Fix it →:** the log streams live, then the page shows the customer video, before and after videos, the verdict and the PR. Taskly is now the patched build; try it, then **↺ Reset app** to bring the bugs back.
+4. **🎥 Record session:** records the whole tab with your microphone and downloads a `.webm` when you stop. That's your demo video.
+
+Tested end to end: a bug recorded live in the Studio (ticks lost on refresh) was fixed by a real `gemini-4-argon` run in 82s (`verdict: fixed`). The embedded Taskly then kept ticks across a reload, and Reset brought the bug back.
+
 ## Setup
 
 ```bash
@@ -46,14 +61,12 @@ cp .env.example .env            # add GEMINI_API_KEY
 ## Run
 
 ```bash
-npm run ui                                                                # web UI on http://localhost:4180
+npm start                                                                 # TicketFix Studio on http://localhost:4180
 npm run fix:mock -- tickets/ticket-001.webm                               # canned model responses, no key needed
 node --env-file=.env pipeline/index.js tickets/ticket-persist.webm --no-pr  # real model, no PR
 node --env-file=.env pipeline/index.js tickets/<new-ticket>.mp4           # real model, opens a PR
 npm run reset                                                             # the fix stage leaves the app fixed — reset between runs
 ```
-
-The web UI: drop a recording (or pick a sample ticket), choose real or mock, and watch the log stream live. It then shows the customer video, before and after videos, the verdict and the PR.
 
 **Your own ticket:** run `npm run app` (Taskly on http://localhost:4173), screen-record yourself hitting a bug, and save it as `tickets/<name>.mp4`. Optionally add `tickets/<name>.txt` with the customer's one-line complaint. Then run it. `node scripts/record-ticket.js delete|persist|mobile` re-records the sample tickets.
 
@@ -67,7 +80,7 @@ Artifacts land in `out/pr/<ticket>/`: `PR.md`, `fix.diff`, `before.webm`, `after
 | `pipeline/` | `stages.js` (the four stages and their loops), `gemini.js` (all SDK calls), `prompts.js`, `runner.js` (Playwright + video harvest), `repo.js`, `pr.js` |
 | `pipeline/mock/` | Canned responses for `--mock`, taken from a real run; the first repro attempt is deliberately wrong to exercise the retry |
 | `evidence/` | Real runs: bug report, test, diff, PR text and both videos for each ticket |
-| `ui/` | Web UI: no framework, no build step |
+| `ui/` | TicketFix Studio (`server.js` + one page): no framework, no build step |
 | tag [`v1-single-bug`](https://github.com/Kush614/ticketfix/tree/v1-single-bug) | The first version: front end only, one bug ([PR #1](https://github.com/Kush614/ticketfix/pull/1)) |
 
 ## Making the checks trustworthy

@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Drop a customer's screen recording, get a PR with a failing test, a fix, and a before/after video. Powered by Gemini 4 Argon.",
   "scripts": {
+    "start": "node ui/server.js",
     "app": "node app/server.js",
     "test:app": "playwright test",
     "fix": "node pipeline/index.js",
