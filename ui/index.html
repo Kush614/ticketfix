@@ -69,10 +69,11 @@
         <span id="app-state" class="pill"><span class="dot"></span>…</span>
         <span style="flex:1"></span>
         <button class="rec" id="bug-btn">● Record bug</button>
+        <button id="reload-btn" title="Reload the app, like the customer pressing refresh">⟳ Refresh app</button>
         <button id="reset-btn" title="Restore the original app with its bugs">↺ Reset app</button>
       </div>
       <div class="stage" id="stage"><iframe id="frame" title="Taskly"></iframe></div>
-      <p class="hint">Try: tick two tasks and refresh · delete under “Active” · on 📱 Phone, add a very long task.</p>
+      <p class="hint">Try: tick two tasks and ⟳ Refresh app · delete under “Active” · on 📱 Phone, add a very long task.</p>
     </section>
 
     <section class="card">
@@ -133,6 +134,7 @@ function setView(phone) {
 }
 $('view-desktop').onclick = () => setView(false);
 $('view-phone').onclick = () => setView(true);
+$('reload-btn').onclick = () => { $('frame').src = `${state.appUrl}/?t=${Date.now()}`; };
 $('reset-btn').onclick = async () => {
   $('reset-btn').disabled = true;
   const r = await fetch('/reset', { method: 'POST' });
