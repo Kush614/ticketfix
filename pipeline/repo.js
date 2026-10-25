@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const IGNORE_DIRS = new Set(['node_modules', '.git', 'out', 'tickets', 'test-results', 'playwright-report', '.playwright']);
+const IGNORE_DIRS = new Set(['node_modules', '.git', 'out', 'tickets', 'evidence', 'test-results', 'playwright-report', '.playwright']);
 const IGNORE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webm', '.mp4', '.lock', '.ico', '.woff', '.woff2']);
 
 export function listSourceFiles(root) {
