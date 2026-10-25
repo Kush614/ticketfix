@@ -35,7 +35,7 @@ Each fix touched only the reported bug's file. One early ticket-001 run quietly 
 
 **On a real Google bug:** given only the reporter's videos and Angular Material's code from before the fix, Argon found the exact cause of [angular/components#26557](https://github.com/angular/components/issues/26557): the same element the maintainers later changed. Its proposed fix would not have passed review. Full write-up: [`evidence/real-world-angular-26557`](evidence/real-world-angular-26557).
 
-**Demo video (53s):** [`docs/demo.webm`](docs/demo.webm). It shows a real run on the back-end bug sped up 6×, the customer's video next to the fixed build, PR #2 with its "Also noticed" list, and the mobile layout fix.
+**Demo video (60s):** [`docs/demo.webm`](docs/demo.webm). It shows a real run on the back-end bug sped up 9×, the customer's video next to the fixed build, PR #2 with "Also noticed", the mobile layout fix, then the real Angular Material bug: the reporter's video, Argon's diagnosis next to the maintainers' fix, and the honest scorecard.
 
 ## TicketFix Studio: the whole demo in one page
 
