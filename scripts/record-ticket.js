@@ -22,6 +22,7 @@ const SCENARIOS = {
   // front-end logic: deleting under the Active filter removes a different todo
   delete: {
     ticket: 'ticket-001',
+    note: 'I deleted a task and a different one disappeared!',
     viewport: { width: 900, height: 640 },
     async steps(page) {
       await add(page, ['Buy milk', 'Walk dog', 'Pay rent']);

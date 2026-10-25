@@ -1,20 +1,35 @@
+diff --git a/.gitignore b/.gitignore
+index 95b8014..381583f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -3,6 +3,7 @@ out/
+ .env
+ tickets/*
+ !tickets/ticket-001.webm
++!tickets/ticket-001.txt
+ !tickets/ticket-persist.*
+ !tickets/ticket-mobile.*
+ !tickets/.gitkeep
 diff --git a/app/public/app.js b/app/public/app.js
-index 6ff468a..163eac3 100644
+index b6c466a..eaad590 100644
 --- a/app/public/app.js
 +++ b/app/public/app.js
-@@ -44,9 +44,8 @@ function toggleTodo(id) {
-   render();
+@@ -38,11 +38,10 @@ function toggleTodo(id) {
+   api(`/api/todos/${id}`, 'PATCH', { done: t.done });
  }
  
 -function deleteTodo(index) {
 -  // Remove the todo at this position in the list.
--  todos.splice(index, 1);
+-  const [t] = todos.splice(index, 1);
 +function deleteTodo(id) {
 +  todos = todos.filter(t => t.id !== id);
-   save();
    render();
+-  api(`/api/todos/${t.id}`, 'DELETE');
++  api(`/api/todos/${id}`, 'DELETE');
  }
-@@ -67,7 +66,7 @@ function render() {
+ 
+ function setFilter(next) {
+@@ -61,7 +60,7 @@ function render() {
      listEl.appendChild(li);
      return;
    }
@@ -23,7 +38,7 @@ index 6ff468a..163eac3 100644
      const li = document.createElement('li');
      li.dataset.id = String(t.id);
      if (t.done) li.classList.add('done');
-@@ -86,7 +85,7 @@ function render() {
+@@ -80,7 +79,7 @@ function render() {
      del.className = 'del';
      del.textContent = '×';
      del.setAttribute('aria-label', `Delete ${t.title}`);
@@ -32,3 +47,142 @@ index 6ff468a..163eac3 100644
  
      li.append(cb, span, del);
      listEl.appendChild(li);
+diff --git a/pipeline/gemini.js b/pipeline/gemini.js
+index 36a8bb1..95312f9 100644
+--- a/pipeline/gemini.js
++++ b/pipeline/gemini.js
+@@ -55,8 +55,9 @@ export async function uploadVideo(filePath) {
+  * @param {string} o.system system instruction
+  * @param {boolean} o.json  request application/json
+  * @param {string} o.mockKey name of fixture in pipeline/mock/<mockKey>.json (mock mode only)
++ * @param {boolean} o.think  let the model reason before answering (video stages)
+  */
+-export async function ask({ parts, system, json = false, mockKey, maxOutputTokens }) {
++export async function ask({ parts, system, json = false, mockKey, maxOutputTokens, think = false }) {
+   if (MOCK) {
+     const p = path.join(__dirname, 'mock', `${mockKey}.json`);
+     if (!fs.existsSync(p)) throw new Error(`no mock fixture for ${mockKey}`);
+@@ -75,6 +76,7 @@ export async function ask({ parts, system, json = false, mockKey, maxOutputToken
+       responseMimeType: json ? 'application/json' : undefined,
+       maxOutputTokens: maxOutputTokens ?? undefined,
+       temperature: 0.2,
++      ...(think ? { thinkingConfig: { thinkingLevel: 'high' } } : {}),
+     },
+   });
+   return res.text;
+diff --git a/pipeline/index.js b/pipeline/index.js
+index c828e7a..a931ec6 100644
+--- a/pipeline/index.js
++++ b/pipeline/index.js
+@@ -50,12 +50,12 @@ try {
+     logged(`⚠️  verifier says "${verdict.verdict}" — not opening a PR. See out/pr/${ticketId}/PR.md`);
+   }
+   const pr = openPr({
+-    root, ticketId, bug, verdict, diff: fx.diff, specRel: rep.specRel,
++    root, ticketId, bug, verdict, diff: fx.diff, specRel: rep.specRel, otherBugs: fx.otherBugs,
+     beforeVideo: rep.beforeVideo, afterVideo: fx.afterVideo, log: logged,
+     dryRun: flags.has('--no-pr') || isMock || verdict.verdict !== 'fixed',
+   });
+ 
+-  fs.writeFileSync(path.join(pr.outDir, 'run.json'), JSON.stringify({ ticketId, bug, verdict, rationale: fx.rationale, prUrl: pr.url, log: stageLog, seconds: (Date.now() - t0) / 1000 }, null, 2));
++  fs.writeFileSync(path.join(pr.outDir, 'run.json'), JSON.stringify({ ticketId, bug, verdict, rationale: fx.rationale, otherBugs: fx.otherBugs, prUrl: pr.url, log: stageLog, seconds: (Date.now() - t0) / 1000 }, null, 2));
+   logged(`✅ done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+ } catch (e) {
+   log(`💥 ${e.message}`);
+diff --git a/pipeline/pr.js b/pipeline/pr.js
+index fc209f1..d7f2cc4 100644
+--- a/pipeline/pr.js
++++ b/pipeline/pr.js
+@@ -5,7 +5,7 @@ import path from 'node:path';
+ import { spawnSync } from 'node:child_process';
+ import { git } from './repo.js';
+ 
+-export function openPr({ root, ticketId, bug, verdict, diff, beforeVideo, afterVideo, specRel, log, dryRun }) {
++export function openPr({ root, ticketId, bug, verdict, diff, beforeVideo, afterVideo, specRel, otherBugs = [], log, dryRun }) {
+   const outDir = path.join(root, 'out', 'pr', ticketId);
+   fs.mkdirSync(outDir, { recursive: true });
+   if (beforeVideo) fs.copyFileSync(beforeVideo, path.join(outDir, 'before.webm'));
+@@ -27,7 +27,7 @@ export function openPr({ root, ticketId, bug, verdict, diff, beforeVideo, afterV
+ **Comparison:** ${verdict.comparison}
+ </details>
+ 
+-Before / after recordings: \`out/pr/${ticketId}/before.webm\`, \`out/pr/${ticketId}/after.webm\`
++${otherBugs.length ? `**Also noticed while fixing this (not changed in this PR):**\n${otherBugs.map(b => `- ${b}`).join('\n')}\n\n` : ''}Before / after recordings: \`out/pr/${ticketId}/before.webm\`, \`out/pr/${ticketId}/after.webm\`
+ 
+ 🤖 Generated by TicketFix with Gemini 4 Argon.
+ `;
+diff --git a/pipeline/prompts.js b/pipeline/prompts.js
+index 6cdac3b..7dac75a 100644
+--- a/pipeline/prompts.js
++++ b/pipeline/prompts.js
+@@ -10,6 +10,9 @@ export const CUSTOMER_NOTE = (note) => `The customer's message on the ticket (th
+ 
+ export const ANALYZE = `Watch the customer's screen recording end to end, then read the whole repository.
+ 
++Report ONLY the bug this recording shows. The code may contain other bugs — ignore any the video does not show.
++Every field is a final conclusion, not your reasoning: no "wait", no self-corrections.
++
+ Produce a precise bug report as JSON:
+ {
+   "title": "short imperative summary, e.g. 'Deleting a todo in the Active filter removes the wrong item'",
+@@ -32,6 +35,7 @@ Rules:
+ - Assert on the user-visible symptom from the recording, not on implementation details.
+ - Use the app's existing accessible names / placeholders / roles (read the repo).
+ - Start from a clean state: read the repo for how (e.g. a reset endpoint, or clearing localStorage after navigation).
++- If the bug needs a particular screen size, set it with test.use({ viewport: { width, height } }) at the top of the file — not page.setViewportSize() — so the recording is that size too.
+ - Toggle checkboxes with .click(), not .check() — the app re-renders the list on change, so .check() times out waiting on a detached node.
+ - File path: ${specPath}. Use ESM imports from '@playwright/test'.
+ - Keep it under 60 lines.
+@@ -61,9 +65,10 @@ ${spec}
+ Rules:
+ - Return FULL contents of every file you change (not diffs). Only touch files under app/ (never tests).
+ - Minimal, root-cause fix. Do not refactor unrelated code. Do not change the test.
++- Fix ONLY the bug in this ticket. If you notice other bugs while reading the code, do not fix them — list them in other_bugs_noticed (file, what is wrong, what a user would see).
+ - Keep the existing code style.
+ 
+-Respond as JSON: { "rationale": "2-4 sentences", "files": [ { "path": "relative/path", "content": "<full file>" } ] }`;
++Respond as JSON: { "rationale": "2-4 sentences", "files": [ { "path": "relative/path", "content": "<full file>" } ], "other_bugs_noticed": ["one sentence each", ...] }`;
+ 
+ export const FIX_RETRY = (output) => `Your fix did not make the test suite pass. Playwright output:
+ ${output}
+diff --git a/pipeline/stages.js b/pipeline/stages.js
+index 5b7163d..e222bda 100644
+--- a/pipeline/stages.js
++++ b/pipeline/stages.js
+@@ -13,6 +13,7 @@ export async function analyze({ root, videoPart, note, log }) {
+     system: P.SYSTEM,
+     parts: [videoPart, ...(note ? [{ text: P.CUSTOMER_NOTE(note) }] : []), { text: P.ANALYZE }, { text: snapshot(root) }],
+     json: true,
++    think: true,
+     mockKey: 'analyze',
+   });
+   const bug = parseJson(text);
+@@ -89,7 +90,7 @@ export async function fix({ root, bug, specRel, spec, feedback, log }) {
+         log('   ✓ repro test passes, full suite green');
+         // re-run the single spec last so out/videos/after-1.webm is the clean "after" recording
+         const again = runPlaywright(root, specRel, { label: 'after' });
+-        return { rationale: res.rationale, diff: gitDiff(root), afterVideo: again.videos[0] };
++        return { rationale: res.rationale, otherBugs: res.other_bugs_noticed || [], diff: gitDiff(root), afterVideo: again.videos[0] };
+       }
+       log('   ✗ repro passes but suite regressed — retrying');
+       extra = [{ text: P.FIX_RETRY(all.output) }];
+@@ -113,6 +114,7 @@ export async function verify({ bug, originalVideoPart, afterVideoPath, diff, log
+       { text: `Code diff:\n\`\`\`diff\n${diff}\n\`\`\`` },
+     ],
+     json: true,
++    think: true,
+     mockKey: 'verify',
+   });
+   const v = parseJson(text);
+diff --git a/scripts/record-ticket.js b/scripts/record-ticket.js
+index c7019da..94c9ad9 100644
+--- a/scripts/record-ticket.js
++++ b/scripts/record-ticket.js
+@@ -22,6 +22,7 @@ const SCENARIOS = {
+   // front-end logic: deleting under the Active filter removes a different todo
+   delete: {
+     ticket: 'ticket-001',
++    note: 'I deleted a task and a different one disappeared!',
+     viewport: { width: 900, height: 640 },
+     async steps(page) {
+       await add(page, ['Buy milk', 'Walk dog', 'Pay rent']);

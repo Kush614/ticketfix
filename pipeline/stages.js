@@ -13,6 +13,7 @@ export async function analyze({ root, videoPart, note, log }) {
     system: P.SYSTEM,
     parts: [videoPart, ...(note ? [{ text: P.CUSTOMER_NOTE(note) }] : []), { text: P.ANALYZE }, { text: snapshot(root) }],
     json: true,
+    think: true,
     mockKey: 'analyze',
   });
   const bug = parseJson(text);
@@ -89,7 +90,7 @@ export async function fix({ root, bug, specRel, spec, feedback, log }) {
         log('   ✓ repro test passes, full suite green');
         // re-run the single spec last so out/videos/after-1.webm is the clean "after" recording
         const again = runPlaywright(root, specRel, { label: 'after' });
-        return { rationale: res.rationale, diff: gitDiff(root), afterVideo: again.videos[0] };
+        return { rationale: res.rationale, otherBugs: res.other_bugs_noticed || [], diff: gitDiff(root), afterVideo: again.videos[0] };
       }
       log('   ✗ repro passes but suite regressed — retrying');
       extra = [{ text: P.FIX_RETRY(all.output) }];
@@ -113,6 +114,7 @@ export async function verify({ bug, originalVideoPart, afterVideoPath, diff, log
       { text: `Code diff:\n\`\`\`diff\n${diff}\n\`\`\`` },
     ],
     json: true,
+    think: true,
     mockKey: 'verify',
   });
   const v = parseJson(text);

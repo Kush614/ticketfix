@@ -1,0 +1,25 @@
+diff --git a/app/public/index.html b/app/public/index.html
+index 3d641b5..1fcb031 100644
+--- a/app/public/index.html
++++ b/app/public/index.html
+@@ -19,7 +19,7 @@
+     ul { list-style:none; padding:0; margin:0; }
+     li { display:flex; align-items:center; gap:12px; background:var(--card); padding:12px; border-radius:8px; margin-bottom:8px; overflow:hidden; }
+     li.done .title { text-decoration: line-through; color: var(--muted); }
+-    .title { flex:1; white-space:nowrap; }
++    .title { flex:1; min-width:0; overflow-wrap:anywhere; }
+     .del { background:transparent; color:var(--danger); font-size:18px; padding:4px 8px; }
+     .empty { color:var(--muted); padding:24px; text-align:center; }
+   </style>
+diff --git a/pipeline/prompts.js b/pipeline/prompts.js
+index 6cdac3b..6632840 100644
+--- a/pipeline/prompts.js
++++ b/pipeline/prompts.js
+@@ -32,6 +32,7 @@ Rules:
+ - Assert on the user-visible symptom from the recording, not on implementation details.
+ - Use the app's existing accessible names / placeholders / roles (read the repo).
+ - Start from a clean state: read the repo for how (e.g. a reset endpoint, or clearing localStorage after navigation).
++- If the bug needs a particular screen size, set it with test.use({ viewport: { width, height } }) at the top of the file — not page.setViewportSize() — so the recording is that size too.
+ - Toggle checkboxes with .click(), not .check() — the app re-renders the list on change, so .check() times out waiting on a detached node.
+ - File path: ${specPath}. Use ESM imports from '@playwright/test'.
+ - Keep it under 60 lines.

@@ -1,17 +1,17 @@
-# Deleting a todo while filtered removes the wrong item from the underlying list
+# Deleting a todo while a filter is active removes the wrong item
 
-## Context
-When viewing a filtered list of todos (`Active` or `Done`), clicking the delete (`×`) button on a todo item removed the wrong item from the underlying `todos` list.
+## Summary
+Fixes a bug where deleting a todo while a filter (`Active` or `Done`) is applied removes the wrong item from the list.
 
 ## Root Cause
-In `app/public/app.js`, `render()` iterated over `visibleTodos()` and bound each delete button to `deleteTodo(i)` using the item's index `i` in the filtered array. `deleteTodo(index)` then called `todos.splice(index, 1)` on the unfiltered `todos` array.
+In `app/public/app.js`, `render()` iterated over the filtered array returned by `visibleTodos()` and bound each item's delete button to `deleteTodo(i)` using its index `i` in the filtered view. `deleteTodo(index)` then called `todos.splice(index, 1)` on the unfiltered `todos` array, causing an index mismatch whenever preceding todos were hidden by the active filter.
 
 ## Fix
-- Updated `deleteTodo(id)` to accept the todo's unique `id` and filter `todos` by `t.id !== id`.
-- Updated the delete button click handler in `render()` to call `deleteTodo(t.id)`.
+- Updated `deleteTodo` in `app/public/app.js` to accept the todo's `id` (`deleteTodo(id)`), filter `todos` by `t.id !== id`, and call `DELETE /api/todos/${id}`.
+- Updated the delete button click handler in `render()` to pass `t.id` instead of the filtered loop index.
 
 ## Verification
-Verified via automated Playwright test: created three todos (`Buy milk`, `Walk dog`, `Pay rent`), completed `Buy milk`, switched to the `Active` filter, deleted `Walk dog` (first visible item in `Active`), and verified that `Walk dog` was removed while `Buy milk` and `Pay rent` remained when switching back to `All`.
+- Added a Playwright reproduction test that creates `'Buy milk'`, `'Walk dog'`, and `'Pay rent'`, marks `'Buy milk'` as done, switches to the `'Active'` filter, deletes `'Pay rent'`, and verifies that `'Walk dog'` and `'Buy milk'` remain while `'Pay rent'` is removed.
 
 ---
 **Ticket:** `ticket-001`
@@ -20,12 +20,16 @@ Verified via automated Playwright test: created three todos (`Buy milk`, `Walk d
 
 <details><summary>What the verifier saw</summary>
 
-**Customer recording:** The user added three todos ('Buy milk', 'Walk dog', 'Pay rent'), marked 'Buy milk' as completed (00:05), and switched to the 'Active' filter (00:06) where 'Walk dog' (visible index 0) and 'Pay rent' (visible index 1) were shown. When deleting an item in the filtered view (00:07), `deleteTodo` spliced the unfiltered `todos` array by the filtered visible index instead of the item's `id`, deleting the wrong todo item.
+**Customer recording:** The user adds three todos ('Buy milk', 'Walk dog', 'Pay rent') between 00:01 and 00:04, marks 'Buy milk' as done at 00:04, and switches to the 'Active' filter at 00:05 so only 'Walk dog' and 'Pay rent' are visible. At 00:07, clicking the delete button on 'Pay rent' removes 'Walk dog' instead, leaving 'Pay rent' in both the Active view (00:07) and the All view (00:09).
 
-**Fixed build:** The automated test added 'Buy milk', 'Walk dog', and 'Pay rent' (00:01–00:03), marked 'Buy milk' as done (00:04), switched to the 'Active' filter and deleted 'Walk dog' (00:05), leaving only 'Pay rent' in the 'Active' list. Switching back to 'All' (00:06) showed both 'Buy milk' (completed) and 'Pay rent' intact, confirming that deleting 'Walk dog' at visible index 0 in 'Active' removed 'Walk dog' rather than 'Buy milk' (index 0 in `todos`).
+**Fixed build:** The automated test adds 'Buy milk', 'Walk dog', and 'Pay rent' (00:01–00:03), marks 'Buy milk' as done, switches to the 'Active' filter (00:04) where 'Walk dog' and 'Pay rent' are visible, deletes 'Pay rent', and switches back to the 'All' filter (00:05–00:06), showing 'Buy milk' (done) and 'Walk dog' remaining while 'Pay rent' has been removed.
 
-**Comparison:** In the original recording (00:06–00:09), deleting an item while on the 'Active' tab used the filtered array index `i` to splice the main `todos` array, causing a mismatch whenever completed items preceded active items. In the fixed recording, after marking 'Buy milk' (index 0 in `todos`) as done at 00:04, the test switches to 'Active' and deletes 'Walk dog' (visible index 0 in 'Active') at 00:05: 'Walk dog' is immediately removed leaving only 'Pay rent', and switching to 'All' at 00:06 confirms 'Buy milk' was not accidentally spliced from index 0 of `todos`.
+**Comparison:** In the original recording at 00:07–00:09, deleting 'Pay rent' while the 'Active' filter is selected removes 'Walk dog' and leaves 'Buy milk' and 'Pay rent' in the 'All' view. In the fixed build recording at 00:04–00:06, performing the same deletion under the 'Active' filter and returning to 'All' leaves 'Buy milk' and 'Walk dog' while 'Pay rent' is properly deleted.
 </details>
+
+**Also noticed while fixing this (not changed in this PR):**
+- In app/server.js, the PATCH /api/todos/:id handler compares numeric `t.id` against string `req.params.id` with strict equality (`===`), causing todo completion state changes to return 404 and revert when the user reloads the page.
+- In app/public/index.html, `.title` has `white-space: nowrap` without overflow handling, so long todo titles push the delete button off the right edge of the `overflow: hidden` list item and make it unclickable.
 
 Before / after recordings: `out/pr/ticket-001/before.webm`, `out/pr/ticket-001/after.webm`
 

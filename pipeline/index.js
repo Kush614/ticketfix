@@ -50,12 +50,12 @@ try {
     logged(`⚠️  verifier says "${verdict.verdict}" — not opening a PR. See out/pr/${ticketId}/PR.md`);
   }
   const pr = openPr({
-    root, ticketId, bug, verdict, diff: fx.diff, specRel: rep.specRel,
+    root, ticketId, bug, verdict, diff: fx.diff, specRel: rep.specRel, otherBugs: fx.otherBugs,
     beforeVideo: rep.beforeVideo, afterVideo: fx.afterVideo, log: logged,
     dryRun: flags.has('--no-pr') || isMock || verdict.verdict !== 'fixed',
   });
 
-  fs.writeFileSync(path.join(pr.outDir, 'run.json'), JSON.stringify({ ticketId, bug, verdict, rationale: fx.rationale, prUrl: pr.url, log: stageLog, seconds: (Date.now() - t0) / 1000 }, null, 2));
+  fs.writeFileSync(path.join(pr.outDir, 'run.json'), JSON.stringify({ ticketId, bug, verdict, rationale: fx.rationale, otherBugs: fx.otherBugs, prUrl: pr.url, log: stageLog, seconds: (Date.now() - t0) / 1000 }, null, 2));
   logged(`✅ done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 } catch (e) {
   log(`💥 ${e.message}`);

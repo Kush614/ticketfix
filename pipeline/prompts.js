@@ -10,6 +10,9 @@ export const CUSTOMER_NOTE = (note) => `The customer's message on the ticket (th
 
 export const ANALYZE = `Watch the customer's screen recording end to end, then read the whole repository.
 
+Report ONLY the bug this recording shows. The code may contain other bugs — ignore any the video does not show.
+Every field is a final conclusion, not your reasoning: no "wait", no self-corrections.
+
 Produce a precise bug report as JSON:
 {
   "title": "short imperative summary, e.g. 'Deleting a todo in the Active filter removes the wrong item'",
@@ -32,6 +35,7 @@ Rules:
 - Assert on the user-visible symptom from the recording, not on implementation details.
 - Use the app's existing accessible names / placeholders / roles (read the repo).
 - Start from a clean state: read the repo for how (e.g. a reset endpoint, or clearing localStorage after navigation).
+- If the bug needs a particular screen size, set it with test.use({ viewport: { width, height } }) at the top of the file — not page.setViewportSize() — so the recording is that size too.
 - Toggle checkboxes with .click(), not .check() — the app re-renders the list on change, so .check() times out waiting on a detached node.
 - File path: ${specPath}. Use ESM imports from '@playwright/test'.
 - Keep it under 60 lines.
@@ -61,9 +65,10 @@ ${spec}
 Rules:
 - Return FULL contents of every file you change (not diffs). Only touch files under app/ (never tests).
 - Minimal, root-cause fix. Do not refactor unrelated code. Do not change the test.
+- Fix ONLY the bug in this ticket. If you notice other bugs while reading the code, do not fix them — list them in other_bugs_noticed (file, what is wrong, what a user would see).
 - Keep the existing code style.
 
-Respond as JSON: { "rationale": "2-4 sentences", "files": [ { "path": "relative/path", "content": "<full file>" } ] }`;
+Respond as JSON: { "rationale": "2-4 sentences", "files": [ { "path": "relative/path", "content": "<full file>" } ], "other_bugs_noticed": ["one sentence each", ...] }`;
 
 export const FIX_RETRY = (output) => `Your fix did not make the test suite pass. Playwright output:
 ${output}

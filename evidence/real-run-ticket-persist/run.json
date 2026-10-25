@@ -1,0 +1,51 @@
+{
+  "ticketId": "ticket-persist",
+  "bug": {
+    "title": "Toggling a todo's done state does not persist across page reloads",
+    "observed_steps": [
+      "00:01 — User adds todo 'Buy milk'",
+      "00:02 — User adds todo 'Walk dog'",
+      "00:03 — User adds todo 'Pay rent'",
+      "00:04 — User checks the checkbox for 'Buy milk', marking it done in the UI",
+      "00:05 — User checks the checkbox for 'Pay rent', marking it done in the UI",
+      "00:08 — User refreshes the page; all three todos reload in the unchecked (not done) state"
+    ],
+    "expected": "After marking 'Buy milk' and 'Pay rent' as done and reloading the page, both items should remain checked and styled as completed.",
+    "actual": "After reloading the page at 00:08, 'Buy milk' and 'Pay rent' revert to unchecked/active, losing their completed state.",
+    "evidence_timestamps": [
+      "00:00 — Empty list showing 'Nothing here.'",
+      "00:04 — 'Buy milk' is checked and struck through; 'Walk dog' and 'Pay rent' are unchecked",
+      "00:05 — Both 'Buy milk' and 'Pay rent' are checked and struck through",
+      "00:08 — Page reloads and all three items ('Buy milk', 'Walk dog', 'Pay rent') are unchecked with no strikethrough"
+    ],
+    "suspected_files": [
+      "app/server.js"
+    ],
+    "root_cause_hypothesis": "In app/server.js inside the `app.patch('/api/todos/:id', ...)` handler (lines 23-28), the server looks up the todo using strict equality `todos.find(t => t.id === req.params.id)`. Because `t.id` is a number assigned via `nextId++` and `req.params.id` is a string from Express route parameters, the strict comparison always evaluates to false, causing the endpoint to return a 404 and never update `todo.done` in server memory (unlike the DELETE handler on line 31 which converts `Number(req.params.id)`).",
+    "confidence": 1
+  },
+  "verdict": {
+    "verdict": "fixed",
+    "original_video_summary": "Between 00:01 and 00:03, the user added three todos ('Buy milk', 'Walk dog', and 'Pay rent'). At 00:04 and 00:05, the user marked 'Buy milk' and 'Pay rent' as done, which updated their checkboxes and struck through their text in the UI. At 00:08, upon refreshing the page, all three todos reloaded in the unchecked/incomplete state, losing the toggled done status.",
+    "fixed_video_summary": "Between 00:01 and 00:03, the test added the same three todos ('Buy milk', 'Walk dog', and 'Pay rent'). At 00:04, 'Buy milk' and 'Pay rent' were checked as done. After reloading the page at 00:05, 'Buy milk' and 'Pay rent' remained checked and struck through while 'Walk dog' stayed unchecked.",
+    "comparison": "In both recordings, three todos ('Buy milk', 'Walk dog', 'Pay rent') are created (00:01–00:03) and 'Buy milk' and 'Pay rent' are marked as done (00:04–00:05 in original; 00:04 in fixed). In the original recording, reloading at 00:08 caused 'Buy milk' and 'Pay rent' to revert to unchecked. In the new recording, at 00:05 after the reload, both 'Buy milk' and 'Pay rent' retain their blue checked boxes and strikethrough styling.",
+    "pr_description": "## Context\nWhen users checked or unchecked a todo item in Taskly, the UI updated optimistically, but refreshing the page caused all todos to revert to their initial unchecked state.\n\n## Root Cause\nIn `app/server.js`, the `PATCH /api/todos/:id` route handler compared `t.id === req.params.id` using strict equality. Because `t.id` is a number and `req.params.id` is a string, the lookup always failed and returned a `404 Not Found` without persisting the `done` state on the server.\n\n## Fix\nConvert `req.params.id` to a number (`const id = Number(req.params.id)`) before searching the `todos` array in `PATCH /api/todos/:id`, matching the behavior in the `DELETE` handler.\n\n## Verification\nVerified via automated browser test recording: added 'Buy milk', 'Walk dog', and 'Pay rent', toggled 'Buy milk' and 'Pay rent' to done, reloaded the page, and confirmed that both items remained checked and struck through after reload."
+  },
+  "rationale": "In `app/server.js`, the `PATCH /api/todos/:id` endpoint compared the numeric `t.id` against the string `req.params.id` using strict equality (`===`), which always failed and returned a 404 without updating the todo's `done` state on the server. Converting `req.params.id` with `Number(req.params.id)` (consistent with the `DELETE` handler) ensures the todo is found and updated in memory so the completed state persists across page reloads.",
+  "prUrl": null,
+  "log": [
+    "🎫 ticket-persist  model=gemini-4-argon",
+    "💬 customer wrote: \"I tick things off, refresh the page, and they're all unticked again. Every time.\"",
+    "👁  Argon is watching the recording and reading the repo…",
+    "   → Toggling a todo's done state does not persist across page reloads  (confidence 1)",
+    "🧪 Writing reproduction test (attempt 1/3)…",
+    "   ✓ test FAILS on current code (good) — After marking 'Buy milk' and 'Pay rent' as done and reloading the page, both todos remain checked and styled with the 'done' class.",
+    "🔧 Writing fix (attempt 1/3)…",
+    "   edited: app/server.js",
+    "   ✓ repro test passes, full suite green",
+    "🎬 Argon is watching the after-video and comparing it to the ticket…",
+    "   → verdict: fixed",
+    "📦 PR package written to out/pr/ticket-persist/"
+  ],
+  "seconds": 75.881
+}

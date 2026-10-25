@@ -55,8 +55,9 @@ export async function uploadVideo(filePath) {
  * @param {string} o.system system instruction
  * @param {boolean} o.json  request application/json
  * @param {string} o.mockKey name of fixture in pipeline/mock/<mockKey>.json (mock mode only)
+ * @param {boolean} o.think  let the model reason before answering (video stages)
  */
-export async function ask({ parts, system, json = false, mockKey, maxOutputTokens }) {
+export async function ask({ parts, system, json = false, mockKey, maxOutputTokens, think = false }) {
   if (MOCK) {
     const p = path.join(__dirname, 'mock', `${mockKey}.json`);
     if (!fs.existsSync(p)) throw new Error(`no mock fixture for ${mockKey}`);
@@ -75,6 +76,7 @@ export async function ask({ parts, system, json = false, mockKey, maxOutputToken
       responseMimeType: json ? 'application/json' : undefined,
       maxOutputTokens: maxOutputTokens ?? undefined,
       temperature: 0.2,
+      ...(think ? { thinkingConfig: { thinkingLevel: 'high' } } : {}),
     },
   });
   return res.text;

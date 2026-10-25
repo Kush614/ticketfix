@@ -1,0 +1,49 @@
+{
+  "ticketId": "ticket-mobile",
+  "bug": {
+    "title": "Long todo titles push the delete button off-screen due to nowrap and overflow hidden",
+    "observed_steps": [
+      "00:01 — User adds a short todo item 'Buy milk', which renders with its checkbox, title, and red '×' delete button visible.",
+      "00:03 — User adds a second todo with a long title ('Call the landlord about the broken heating in the u...').",
+      "00:04 — User attempts to scroll/swipe horizontally on the long todo item to reach its delete button.",
+      "00:06 — User deletes the short 'Buy milk' todo using its visible '×' button, leaving only the long todo whose delete button remains unreachable off the right edge."
+    ],
+    "expected": "Long todo titles should wrap or truncate so that the delete ('×') button always remains visible and clickable within the todo row on narrow/mobile viewports.",
+    "actual": "The long todo title stays on a single line and expands past the right edge of the list item container, pushing the '×' delete button outside the clipped box where it cannot be seen or clicked.",
+    "evidence_timestamps": [
+      "00:01 — Short task 'Buy milk' shows checkbox on the left and red '×' delete button on the right.",
+      "00:03 — Long task 'Call the landlord about the broken heating i' is clipped at the right edge of the row with no '×' button visible.",
+      "00:04 — Horizontal scroll on the row shifts the checkbox out of view on the left while the text is still truncated on the right without revealing the '×' button.",
+      "00:06 — After deleting 'Buy milk', the long task remains with no visible delete button."
+    ],
+    "suspected_files": [
+      "app/public/index.html"
+    ],
+    "root_cause_hypothesis": "In `app/public/index.html`, the CSS rule for `.title` sets `flex: 1; white-space: nowrap;` without `min-width: 0` or text truncation/wrapping, while the parent `li` sets `display: flex; overflow: hidden;`. Because `.title` cannot wrap or shrink below its content's intrinsic single-line width, any title wider than the container forces the sibling `.del` button past the right edge of the `li` where `overflow: hidden` clips it.",
+    "confidence": 0.98
+  },
+  "verdict": {
+    "verdict": "fixed",
+    "original_video_summary": "At 00:01 the user adds a short todo ('Buy milk') whose checkbox and red '×' delete button are both visible. At 00:03 the user adds a long todo ('Call the landlord about the broken heating in the u...'), which renders on a single line and overflows the right edge of the card, pushing the '×' delete button completely out of view. Even after scrolling horizontally (00:04) and deleting the short item (00:06), the long item's delete button remains unreachable.",
+    "fixed_video_summary": "At 00:01 the test adds 'Buy milk' with its checkbox and red '×' delete button visible. At 00:02 the test adds the long todo ('Call the landlord about the broken heating in the upstairs bedroom before Friday'), which wraps cleanly across three lines inside the row while keeping both the checkbox on the left and the red '×' delete button on the right fully visible. At 00:03 both items are successfully deleted via their '×' buttons, returning the list to 'Nothing here.'",
+    "comparison": "In the original recording at 00:03, the long todo title stays on a single line (`white-space: nowrap`), clipping at 'Call the landlord about the broken heating i' and hiding the '×' button off-screen. In the fixed recording at 00:02, the exact same long todo wraps across three lines within the card, the full text is readable, the red '×' button remains aligned on the right inside the container, and at 00:03 the item is successfully deleted.",
+    "pr_description": "## Context\nOn narrow/mobile viewports, adding a todo item with a long title caused the text to stay on a single line and expand beyond the `<li>` container. Because the list item has `overflow: hidden`, the sibling delete (`×`) button was pushed past the right edge and clipped, making it impossible for users to delete long tasks.\n\n## Root Cause\nIn `app/public/index.html`, `.title` was styled with `flex: 1; white-space: nowrap;` inside a flex container (`li { display: flex; overflow: hidden; }`). Without allowing text wrapping or setting `min-width: 0`, the flex item could not shrink below its single-line content width, forcing the `.del` button outside the visible bounds of the row.\n\n## Fix\nReplaced `white-space: nowrap` on `.title` with `min-width: 0; overflow-wrap: anywhere;` so long titles can shrink and wrap across multiple lines inside the flex row while keeping the checkbox and delete button visible.\n\n## Verification\nVerified via an automated Playwright test running at a mobile viewport size:\n1. Added a short task (`Buy milk`) and a long task (`Call the landlord about the broken heating in the upstairs bedroom before Friday`).\n2. Confirmed the long task wraps onto multiple lines and its `×` delete button remains visible within the card.\n3. Clicked the delete buttons for both tasks and verified the list returns to the empty state (`Nothing here.`)."
+  },
+  "rationale": "In `app/public/index.html`, the `.title` element had `white-space: nowrap` without allowing text wrapping or shrinking (`min-width: 0`), which caused long todo titles to expand beyond the flex container and push the `.del` button out of the `overflow: hidden` list item. Updating `.title` to allow wrapping (`min-width: 0; overflow-wrap: anywhere;`) ensures long titles wrap across multiple lines and the delete button stays visible and clickable in the viewport.",
+  "prUrl": null,
+  "log": [
+    "🎫 ticket-mobile  model=gemini-4-argon",
+    "💬 customer wrote: \"On my phone I can't delete the long task — there's no delete button on it.\"",
+    "👁  Argon is watching the recording and reading the repo…",
+    "   → Long todo titles push the delete button off-screen due to nowrap and overflow hidden  (confidence 0.98)",
+    "🧪 Writing reproduction test (attempt 1/3)…",
+    "   ✓ test FAILS on current code (good) — Verifies that on a 375x667 mobile viewport, a todo with a long title still keeps its delete button within the viewport and clickable so the user can delete it.",
+    "🔧 Writing fix (attempt 1/3)…",
+    "   edited: app/public/index.html",
+    "   ✓ repro test passes, full suite green",
+    "🎬 Argon is watching the after-video and comparing it to the ticket…",
+    "   → verdict: fixed",
+    "📦 PR package written to out/pr/ticket-mobile/"
+  ],
+  "seconds": 66.031
+}
