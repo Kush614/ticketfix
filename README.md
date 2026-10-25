@@ -10,6 +10,8 @@
 
 Every model output is checked against reality before it is trusted.
 
+**Demo video (49s):** [`docs/demo.webm`](docs/demo.webm). It shows a real `gemini-4-argon` run sped up 5×, the customer's video next to Argon's fixed-build test, and the PR it opened ([#1](https://github.com/Kush614/ticketfix/pull/1)).
+
 ```
 tickets/<id>.webm ─► upload ─► ANALYZE ─► REPRODUCE loop ─► FIX loop ─► VERIFY ─► PR
                                  │          test must FAIL     test + suite    watches both
@@ -35,6 +37,8 @@ node --env-file=.env pipeline/index.js tickets/ticket-001.webm            # real
 npm run reset                                                             # the fix stage leaves the app fixed — reset between runs
 ```
 
+Or use the web UI: `npm run ui`, then open http://localhost:4180. Drop a recording (or pick a sample ticket), choose real or mock, and watch the log stream live. It then shows the customer video, before and after videos, the verdict and the PR.
+
 Artifacts land in `out/pr/<ticket>/`: `PR.md`, `fix.diff`, `before.webm`, `after.webm`, `run.json`.
 
 `node scripts/record-ticket.js` re-records the sample ticket. Any `.mp4`/`.webm` screen recording of the app on `http://localhost:4173` works as input.
@@ -48,8 +52,12 @@ Artifacts land in `out/pr/<ticket>/`: `PR.md`, `fix.diff`, `before.webm`, `after
 | `pipeline/mock/` | Canned responses for `--mock`; the first repro attempt is deliberately wrong to exercise the retry |
 | `evidence/real-run-ticket-001/` | A real `gemini-4-argon` run: `verdict: fixed` in ~80s, first attempt at every stage, with the test, diff and both videos |
 | `tickets/ticket-001.webm` | The sample customer recording |
+| `ui/` | Web UI: no framework, no build step |
+| branch [`demo/bug-2`](https://github.com/Kush614/ticketfix/tree/demo/bug-2) | A second, different planted bug (the Done filter shows unfinished todos), with its own ticket recording and a real run in `evidence/real-run-ticket-bug2/` (`verdict: fixed`) |
 
 The model sees only `app/`, `package.json` and `playwright.config.js`, never the spec, the mocks or the evidence, so it has to find the bug from the video and the code.
+
+The recorded test runs use Playwright `slowMo`, so the after-video shows every step to the verifier. At full speed it was about one second long, and the verifier rightly said it couldn't tell what happened.
 
 ## Built today
 
