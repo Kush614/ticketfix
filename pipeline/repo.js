@@ -20,8 +20,12 @@ export function listSourceFiles(root) {
   return out.sort();
 }
 
+// Only the target app goes to the model — never SPEC/CLAUDE.md, mocks, or evidence, which name the bug.
+const SNAPSHOT_FILES = new Set(['package.json', 'playwright.config.js']);
+const inSnapshot = rel => rel.startsWith('app/') || SNAPSHOT_FILES.has(rel);
+
 export function snapshot(root) {
-  const files = listSourceFiles(root);
+  const files = listSourceFiles(root).filter(f => inSnapshot(path.relative(root, f)));
   let s = `<repo root="${path.basename(root)}" files="${files.length}">\n`;
   for (const f of files) {
     const rel = path.relative(root, f);
