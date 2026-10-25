@@ -155,14 +155,16 @@ async function tabCapture() {
   return tabStream;
 }
 function recorder(stream, onDone) {
-  const type = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
-  const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 4e6 });
+  // Chrome records WebM, Safari records MP4: name files by what was actually recorded
+  const type = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t));
+  const rec = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 4e6 });
   const chunks = [];
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
-  rec.onstop = () => onDone(new Blob(chunks, { type: 'video/webm' }));
+  rec.onstop = () => onDone(new Blob(chunks, { type: rec.mimeType.split(';')[0] || 'video/webm' }));
   rec.start(500);
   return rec;
 }
+const ext = blob => (blob.type.includes('mp4') ? 'mp4' : 'webm');
 const stamp = () => new Date().toTimeString().slice(0, 8).replace(/:/g, '');
 function startTimer(btn, label) {
   const t0 = Date.now();
@@ -184,7 +186,7 @@ $('bug-btn').onclick = async () => {
     bugRec = recorder(new MediaStream([track]), blob => {
       bugTrack.stop(); bugRec = null; stopBugTimer();
       $('bug-btn').classList.remove('on'); $('bug-btn').textContent = '● Record bug';
-      useFile(new File([blob], `ticket-live-${stamp()}.webm`, { type: 'video/webm' }));
+      useFile(new File([blob], `ticket-live-${stamp()}.${ext(blob)}`, { type: blob.type }));
       if (!sessionRec) { tabStream.getTracks().forEach(t => t.stop()); tabStream = null; }
     });
     $('bug-btn').classList.add('on');
@@ -206,7 +208,7 @@ $('session-btn').onclick = async () => {
       if (!bugRec) { tabStream?.getTracks().forEach(t => t.stop()); tabStream = null; }
       $('session-btn').classList.remove('on'); $('session-btn').textContent = '🎥 Record session';
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = `ticketfix-session-${stamp()}.webm`; a.click();
+      a.href = URL.createObjectURL(blob); a.download = `ticketfix-session-${stamp()}.${ext(blob)}`; a.click();
     });
     $('session-btn').classList.add('on');
     stopSessionTimer = startTimer($('session-btn'), sessionMic ? 'Stop session · mic on' : 'Stop session');
