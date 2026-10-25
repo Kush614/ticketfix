@@ -46,7 +46,7 @@ Artifacts land in `out/pr/<ticket>/`: `PR.md`, `fix.diff`, `before.webm`, `after
 | `app/` | **Taskly**, the demo target: a tiny todo app with a planted bug (deleting under the Active/Done filter removes the wrong item) |
 | `pipeline/` | The pipeline: `stages.js` (the four stages and their loops), `gemini.js` (all SDK calls), `prompts.js`, `runner.js` (Playwright + video harvest), `repo.js`, `pr.js` |
 | `pipeline/mock/` | Canned responses for `--mock`; the first repro attempt is deliberately wrong to exercise the retry |
-| `evidence/real-run-ticket-001/` | A real `gemini-4-argon` run: `verdict: fixed` in ~62s, first attempt at every stage, with the test, diff and both videos |
+| `evidence/real-run-ticket-001/` | A real `gemini-4-argon` run: `verdict: fixed` in ~80s, first attempt at every stage, with the test, diff and both videos |
 | `tickets/ticket-001.webm` | The sample customer recording |
 
 The model sees only `app/`, `package.json` and `playwright.config.js`, never the spec, the mocks or the evidence, so it has to find the bug from the video and the code.
