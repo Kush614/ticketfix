@@ -3,5 +3,6 @@ out/
 .env
 tickets/*
 !tickets/ticket-001.webm
+!tickets/ticket-bug2.webm
 !tickets/.gitkeep
 .cache/

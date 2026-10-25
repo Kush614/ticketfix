@@ -27,7 +27,7 @@ function save() {
 
 function visibleTodos() {
   if (filter === 'active') return todos.filter(t => !t.done);
-  if (filter === 'done') return todos.filter(t => t.done);
+  if (filter === 'done') return todos.filter(t => !t.done);
   return todos;
 }
 
