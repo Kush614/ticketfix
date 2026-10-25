@@ -33,7 +33,7 @@ The demo app, **Taskly**, is a todo list with a small JSON API. It has three pla
 
 Each fix touched only the reported bug's file. One early ticket-001 run quietly fixed the server bug too, which led to the "fix only this ticket, list the rest" rule. Since then, every run has listed the other two bugs correctly under "Also noticed"; see PR #2.
 
-**Demo video (49s, earlier single-bug version):** [`docs/demo.webm`](docs/demo.webm).
+**Demo video (53s):** [`docs/demo.webm`](docs/demo.webm). It shows a real run on the back-end bug sped up 6×, the customer's video next to the fixed build, PR #2 with its "Also noticed" list, and the mobile layout fix.
 
 ## Setup
 
