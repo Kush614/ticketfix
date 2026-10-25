@@ -38,6 +38,7 @@ Before / after recordings: \`out/pr/${ticketId}/before.webm\`, \`out/pr/${ticket
   if (dryRun) return { url: null, outDir };
 
   const branch = `ticketfix/${ticketId}`;
+  const base = git(root, 'rev-parse --abbrev-ref HEAD');
   try {
     git(root, `checkout -b ${branch}`);
     git(root, 'add app');
@@ -48,7 +49,16 @@ Before / after recordings: \`out/pr/${ticketId}/before.webm\`, \`out/pr/${ticket
     return { url: null, outDir };
   }
 
-  const gh = spawnSync('gh', ['pr', 'create', '--title', bug.title, '--body-file', path.join(outDir, 'PR.md'), '--head', branch], { cwd: root, encoding: 'utf8' });
+  try {
+    git(root, `push -u origin ${branch}`);
+    log(`   pushed ${branch}`);
+  } catch (e) {
+    log(`   ! git push failed: ${e.message.split('\n')[0]}`);
+  }
+
+  const gh = spawnSync('gh', ['pr', 'create', '--title', bug.title, '--body-file', path.join(outDir, 'PR.md'), '--head', branch, '--base', base], { cwd: root, encoding: 'utf8' });
+  // back to the base branch so the app is buggy again for the next demo run
+  try { git(root, `checkout ${base}`); } catch (e) { log(`   ! could not switch back to ${base}: ${e.message.split('\n')[0]}`); }
   if (gh.status === 0) {
     const url = gh.stdout.trim().split('\n').pop();
     log(`🚀 PR opened: ${url}`);
