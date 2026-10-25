@@ -41,6 +41,12 @@ ${output}
 
 Re-watch the recording, re-read the code, and rewrite the test so that it fails on the current code for the right reason. Same JSON schema.`;
 
+export const REPRODUCE_ERRORED = (output) => `Your test errored rather than asserting the bug — it crashed, timed out on an action, or used a bad/ambiguous selector, so its failure proves nothing.
+Playwright output:
+${output}
+
+Fix the test so every action succeeds and it fails ONLY on an assertion about the buggy behavior. Use the accessible names in the repo. Same JSON schema.`;
+
 export const FIX = (bug, spec) => `Fix the bug. You have the entire repo in context.
 
 Bug report:

@@ -35,6 +35,12 @@ export async function reproduce({ root, videoPart, bug, ticketId, log }) {
     applyWrites(root, [{ path: specRel, content: spec.content }]);
 
     const run = runPlaywright(root, specRel, { label: 'before' });
+    const errored = !run.passed && testErrored(run.output);
+    if (errored) {
+      log(`   ✗ test errored rather than asserting the bug (${errored}) — retrying`);
+      extra = [{ text: P.REPRODUCE_ERRORED(run.output) }];
+      continue;
+    }
     if (!run.passed) {
       log(`   ✓ test FAILS on current code (good) — ${spec.what_it_asserts}`);
       return { specRel, spec: spec.content, beforeVideo: run.videos[0], output: run.output };
@@ -43,6 +49,19 @@ export async function reproduce({ root, videoPart, bug, ticketId, log }) {
     extra = [{ text: P.REPRODUCE_RETRY(run.output) }];
   }
   throw new Error('could not write a failing reproduction test');
+}
+
+// A failing run only counts as a reproduction if an assertion failed. These mean the test itself is broken.
+const ERROR_SIGNS = [
+  [/\b(SyntaxError|ReferenceError|TypeError)\b/, 'script error'],
+  [/locator\.\w+: (Test )?timeout/i, 'action timed out'],
+  [/Test timeout of \d+ms exceeded/, 'test timed out'],
+  [/strict mode violation/, 'ambiguous selector'],
+  [/No tests found/, 'no tests found'],
+];
+function testErrored(output) {
+  const hit = ERROR_SIGNS.find(([re]) => re.test(output));
+  return hit ? hit[1] : null;
 }
 
 export async function fix({ root, bug, specRel, spec, feedback, log }) {
