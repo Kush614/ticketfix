@@ -33,6 +33,18 @@ The demo app, **Taskly**, is a todo list with a small JSON API. It has three pla
 
 Each fix touched only the reported bug's file. One early ticket-001 run quietly fixed the server bug too, which led to the "fix only this ticket, list the rest" rule. Since then, every run has listed the other two bugs correctly under "Also noticed"; see PR #2.
 
+## Beyond web apps: a robot cell
+
+The same loop works on anything that fails *on camera*. `app/public/robot.html` is a simulated gantry pick-and-place cell: a conveyor feeds parts, the gantry picks each one and drops it into a bin. Its program, `app/public/robot/controller.js`, is the code under repair; `sim.js` is the "physical" cell.
+
+| Ticket | Operator sees | Argon fixed | Evidence |
+|---|---|---|---|
+| `ticket-robot` | "Cell 3 keeps dropping parts on the floor right in front of the bin" | **Units bug in the robot program:** the bin position (540 mm) was sent to the gantry without converting mm → px, so it stopped at 450 mm. One-line fix: `mm(CELL.BIN_X_MM)` | [`evidence/real-run-ticket-robot`](evidence/real-run-ticket-robot) |
+
+Real `gemini-4-argon` run, 118 s, first attempt at every stage. Argon read the gantry's `x = 450 mm` readout off the video, wrote a test that runs the cell and asserts 3/3 parts in the bin (fails on the bug), fixed the program, then watched the re-run and confirmed every part landed in the bin. It also listed the Taskly server bug under "Also noticed" instead of fixing it. In the Studio, click **🤖 Robot cell** to watch the cell.
+
+The cell is a 2D simulation built for this demo, not a real robot. Real cells would plug in the same way: the failure video from the cell camera, the robot program as the repo, and a simulator run as the test.
+
 **On a real Google bug:** given only the reporter's videos and Angular Material's code from before the fix, Argon found the exact cause of [angular/components#26557](https://github.com/angular/components/issues/26557): the same element the maintainers later changed. Its proposed fix would not have passed review. Full write-up: [`evidence/real-world-angular-26557`](evidence/real-world-angular-26557).
 
 **Demo video (60s):** [`docs/demo.webm`](docs/demo.webm). It shows a real run on the back-end bug sped up 9×, the customer's video next to the fixed build, PR #2 with "Also noticed", the mobile layout fix, then the real Angular Material bug: the reporter's video, Argon's diagnosis next to the maintainers' fix, and the honest scorecard.

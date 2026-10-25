@@ -1,0 +1,54 @@
+{
+  "ticketId": "ticket-robot",
+  "bug": {
+    "title": "Gantry releases parts at 450 mm instead of converting BIN_X_MM (540 mm) to pixels",
+    "observed_steps": [
+      "00:00 — Open Cell 3 gantry pick-and-place simulation (/robot.html) while Status is Running.",
+      "00:01–00:03 — Wait for the gantry to pick the first part at x = 200 mm, carry it toward the bin in state TO_BIN, and release it early onto the floor in front of the bin.",
+      "00:04–00:09 — Watch the remaining two parts get picked at 200 mm, carried to gantry x = 450 mm, and released onto the floor until Status reaches Done with In bin: 0 / 3 and Dropped: 3."
+    ],
+    "expected": "In the TO_BIN state, the gantry should travel to the bin center at 540 mm (648 px) before opening the gripper so all 3 parts land inside the bin (In bin: 3 / 3, Dropped: 0).",
+    "actual": "The gantry stops short of the bin at x = 450 mm (540 px) and releases every part onto the floor to the left of the bin, ending with In bin: 0 / 3 and Dropped: 3.",
+    "evidence_timestamps": [
+      "00:00 — Cell starts at gantry x = 200 mm in state = WAIT_PART with BIN @ 540 mm.",
+      "00:03 — First part lands on the floor to the left of the green bin with label DROPPED and header Dropped: 1.",
+      "00:06 — Second part is dropped in front of the bin, incrementing header to Dropped: 2.",
+      "00:08 — Readout shows gantry x = 450 mm and state = RELEASE as the gripper opens short of BIN @ 540 mm.",
+      "00:09 — Third part lands on the floor; header shows In bin: 0 / 3, Dropped: 3, Status: Done."
+    ],
+    "suspected_files": [
+      "app/public/robot/controller.js"
+    ],
+    "root_cause_hypothesis": "In app/public/robot/controller.js inside createController()'s step function (line 33), the 'TO_BIN' state calls io.moveTo(CELL.BIN_X_MM, mm(CELL.CARRY_Y_MM)), passing the raw millimetre constant CELL.BIN_X_MM (540) instead of converting it to pixels with mm(CELL.BIN_X_MM). Because io.moveTo expects pixel coordinates and PX_PER_MM is 1.2, commanding x = 540 px stops the gantry at 540 / 1.2 = 450 mm rather than the bin center at 540 * 1.2 = 648 px (540 mm), causing every part to be released onto the floor in front of the bin.",
+    "confidence": 1
+  },
+  "verdict": {
+    "verdict": "fixed",
+    "original_video_summary": "In the original recording of the Cell 3 gantry pick-and-place simulation, the gantry picks up each of the 3 parts from the table at x = 200 mm and travels right in state TO_BIN, but stops short of the bin (at gantry x = 450 mm, seen at 00:08 in state = RELEASE) instead of reaching BIN @ 540 mm. All 3 parts fall onto the floor to the left of the bin with a red DROPPED indicator, finishing at 00:09 with In bin: 0 / 3, Dropped: 3, and Status: Done.",
+    "fixed_video_summary": "In the new recording on the fixed build, the gantry picks each of the 3 parts at x = 200 mm, travels all the way over the green bin at 540 mm, and releases each part directly into the bin. The parts stack cleanly inside the bin, ending at 00:09–00:10 with In bin: 3 / 3, Dropped: 0, and Status: Done.",
+    "comparison": "At 00:03 in the original video, the first part lands on the floor to the left of the bin (In bin: 0 / 3, Dropped: 1), whereas at 00:03–00:04 in the fixed video, the first part lands inside the green bin (In bin: 1 / 3, Dropped: 0). At 00:06 in the original video, Dropped increments to 2 on the floor, while at 00:06 in the fixed video the second part stacks inside the bin (In bin: 2 / 3, Dropped: 0). Finally, at 00:08–00:09 in the original video the third part is released early at gantry x = 450 mm resulting in In bin: 0 / 3 and Dropped: 3, whereas at 00:09–00:10 in the fixed video all three parts are stacked inside the bin with In bin: 3 / 3, Dropped: 0, and Status: Done.",
+    "pr_description": "## Summary\nFixes a unit-conversion bug in the Cell 3 gantry pick-and-place controller where the gantry stopped at `x = 450 mm` and dropped every part onto the floor in front of the bin instead of placing them inside the bin at `540 mm`.\n\n## Root Cause\nIn `app/public/robot/controller.js`, the `TO_BIN` state called `io.moveTo(CELL.BIN_X_MM, mm(CELL.CARRY_Y_MM))`, passing the raw millimetre constant `CELL.BIN_X_MM` (`540`) instead of converting it to pixels via `mm(CELL.BIN_X_MM)`. Because `io.moveTo` expects pixel coordinates (`PX_PER_MM = 1.2`), commanding `540 px` moved the gantry to `540 / 1.2 = 450 mm` rather than `540 mm` (`648 px`).\n\n## Fix\n- Wrapped `CELL.BIN_X_MM` in `mm(...)` inside the `TO_BIN` case of `createController()` in `app/public/robot/controller.js` (`io.moveTo(mm(CELL.BIN_X_MM), mm(CELL.CARRY_Y_MM))`).\n\n## Verification\n- Ran the automated pick-and-place simulation test against the fixed build and confirmed via screen recording that the gantry carries all three parts to the bin at `540 mm`, stacking all 3 parts inside the bin and finishing with `In bin: 3 / 3`, `Dropped: 0`, and `Status: Done`."
+  },
+  "rationale": "In `app/public/robot/controller.js`, the `TO_BIN` state passed the raw millimetre constant `CELL.BIN_X_MM` (540) to `io.moveTo()` instead of converting it to pixels via `mm(CELL.BIN_X_MM)`. Since `io.moveTo()` operates in pixels (`PX_PER_MM = 1.2`), the gantry stopped at 540 px (450 mm) instead of the bin centre at 648 px (540 mm), dropping every part onto the floor. Wrapping `CELL.BIN_X_MM` with `mm(...)` makes the gantry travel all the way over the bin before releasing.",
+  "otherBugs": [
+    "In app/server.js, PATCH /api/todos/:id compares numeric t.id against string req.params.id with strict equality (===), so toggling a todo returns 404 and the completion state does not persist across page reloads.",
+    "In app/public/app.js, deleteTodo(index) splices the full todos array using the index from the filtered visibleTodos() list, so deleting an item while filtered by Active or Done can delete the wrong todo.",
+    "In app/public/index.html, .title has white-space: nowrap without text-overflow or wrapping, causing long todo titles to push the delete button off the right edge of the card."
+  ],
+  "prUrl": null,
+  "log": [
+    "🎫 ticket-robot  model=gemini-4-argon",
+    "💬 customer wrote: \"Cell 3 keeps dropping parts on the floor right in front of the bin. Started after the layout change to millimetres.\"",
+    "👁  Argon is watching the recording and reading the repo…",
+    "   → Gantry releases parts at 450 mm instead of converting BIN_X_MM (540 mm) to pixels  (confidence 1)",
+    "🧪 Writing reproduction test (attempt 1/3)…",
+    "   ✓ test FAILS on current code (good) — After the Cell 3 gantry pick-and-place run completes (Status: Done), all 3 parts are placed in the bin (#in-bin is 3) and none are dropped on the floor (#dropped is 0).",
+    "🔧 Writing fix (attempt 1/3)…",
+    "   edited: app/public/robot/controller.js",
+    "   ✓ repro test passes, full suite green",
+    "🎬 Argon is watching the after-video and comparing it to the ticket…",
+    "   → verdict: fixed",
+    "📦 PR package written to out/pr/ticket-robot/"
+  ],
+  "seconds": 118.004
+}
