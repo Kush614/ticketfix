@@ -100,3 +100,16 @@ Respond as JSON:
   "comparison": "specific differences between the two, with timestamps",
   "pr_description": "markdown PR body for a human reviewer: context, root cause, fix, how it was verified"
 }`;
+
+// Diagnosis-only runs on an external codebase (scripts/diagnose.js): no test harness, so no verification loop.
+export const EXTERNAL_FIX = (bug) => `Propose the fix for this bug. You have the relevant part of the codebase in context.
+
+Bug report:
+${JSON.stringify(bug, null, 2)}
+
+Rules:
+- Minimal, root-cause fix. Only change files that appear in the snapshot. Keep the existing code style.
+- Return FULL contents of every file you change (not diffs).
+- This is an external project we cannot run here, so explain how a maintainer should verify the fix.
+
+Respond as JSON: { "rationale": "2-4 sentences", "files": [ { "path": "relative/path", "content": "<full file>" } ], "how_to_verify": "steps" }`;

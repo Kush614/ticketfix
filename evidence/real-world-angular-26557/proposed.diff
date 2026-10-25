@@ -1,0 +1,23 @@
+diff --git asrc/material/tooltip/tooltip.scss b/src/material/tooltip/tooltip.scss
+index ae7194f..d53917d 100644
+--- asrc/material/tooltip/tooltip.scss
++++ b/src/material/tooltip/tooltip.scss
+@@ -22,18 +22,6 @@
+   position: relative;
+   transform: scale(0);
+ 
+-  // Increases the area of the tooltip so the user's pointer can go from the trigger directly to it.
+-  &::before {
+-    $offset: -8px;
+-    content: '';
+-    top: $offset;
+-    right: $offset;
+-    bottom: $offset;
+-    left: $offset;
+-    z-index: -1;
+-    position: absolute;
+-  }
+-
+   &._mat-animation-noopable {
+     animation: none;
+     transform: scale(1);

@@ -1,0 +1,37 @@
+{
+  "note": "Cannot click the input field.",
+  "bug": {
+    "title": "Tooltip ::before pseudo-element overlaps adjacent elements and blocks pointer events",
+    "observed_steps": [
+      "00:00 — Hover over the 'Action' button to display the 'Info about the action' tooltip above the input field.",
+      "00:01 — Move the cursor down across the tooltip onto the top portion of the input field directly below the tooltip.",
+      "00:02 — Attempt to click the input field; instead of focusing the input, the click is captured by the tooltip and selects the word 'about' in the tooltip text.",
+      "00:04 — Click again on the input field while the cursor is near the bottom edge of the tooltip; the tooltip still remains open and captures the click.",
+      "00:06 — Move the cursor further away from the tooltip so the tooltip finally closes."
+    ],
+    "expected": "Moving the cursor off the tooltip onto the input field below it should hide the tooltip and allow clicking and focusing the input field.",
+    "actual": "The tooltip remains open when the cursor moves onto the top portion of the input field and intercepts clicks meant for the input field, selecting text inside the tooltip instead.",
+    "evidence_timestamps": [
+      "00:01 — The 'Info about the action' tooltip is open above the input field, and the cursor is positioned over the input field just below the tooltip while remaining an arrow cursor.",
+      "00:02 — Clicking the input field highlights 'about' inside the tooltip instead of focusing the input.",
+      "00:04 — Clicking again highlights 'o' in 'Info' inside the tooltip while the cursor is still over the input field.",
+      "00:06 — Moving the cursor away finally dismisses the tooltip."
+    ],
+    "suspected_files": [
+      "src/material/tooltip/tooltip.scss",
+      "src/material/tooltip/tooltip.ts"
+    ],
+    "root_cause_hypothesis": "In `src/material/tooltip/tooltip.scss` (lines 25–34), `.mat-mdc-tooltip::before` uses an absolute pseudo-element with `$offset: -8px` on `top`, `right`, `bottom`, and `left` so the pointer can travel across the 8px anchor gap (`UNBOUNDED_ANCHOR_GAP`) from the trigger to the tooltip without firing `hide()` in `_setupPointerExitEventsIfNeeded` / `_handleMouseLeave` (`src/material/tooltip/tooltip.ts`). Because this invisible hit area extends 8px around all sides of the tooltip at all times, it overlaps adjacent elements like the input field below the tooltip, preventing `mouseleave` from firing on `TooltipComponent` and intercepting pointer/click events intended for the underlying input.",
+    "confidence": 0.95
+  },
+  "rationale": "The `.mat-mdc-tooltip::before` pseudo-element expanded the tooltip's hit area by 8px on all sides to allow the pointer to cross the gap between the trigger and the tooltip, which caused the tooltip to overlap adjacent elements and intercept pointer events. By removing the `::before` pseudo-element and instead tracking `mousemove` on the document when the pointer leaves the trigger or tooltip without `positionAtOrigin`, we can check whether the cursor is within the combined bounding box bridging the trigger and the tooltip, hiding the tooltip as soon as the pointer moves outside that region without blocking clicks on underlying elements.",
+  "how_to_verify": "1. Render a button with `matTooltip` positioned so that when the tooltip opens (e.g., below the button), its bottom edge is adjacent to an `<input>` element below it.\n2. Hover over the button to open the tooltip.\n3. Move the mouse cursor across the tooltip and onto the top edge of the `<input>` field just below the tooltip.\n4. Verify that the tooltip closes once the cursor leaves the tooltip and that clicking the `<input>` focuses it instead of selecting text inside the tooltip.",
+  "files": [
+    "src/material/tooltip/tooltip.scss",
+    "src/material/tooltip/tooltip.ts"
+  ],
+  "seconds": 147.475,
+  "unchanged_but_claimed": [
+    "src/material/tooltip/tooltip.ts"
+  ]
+}
