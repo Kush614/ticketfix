@@ -1,6 +1,7 @@
 // Thin wrapper around @google/genai: video upload, structured calls, mock mode.
 // Model string comes from the hackathon guide: gemini-4-argon.
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,10 +21,21 @@ async function client() {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Upload cache keyed by sha256 of the video. Lives outside out/ so `npm run reset` doesn't wipe it.
+const CACHE = path.join(__dirname, '..', '.cache', 'uploads.json');
+const readCache = () => { try { return JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch { return {}; } };
+
 /** Upload a video via the Files API and wait until it's ACTIVE. Returns a `fileData` part. */
 export async function uploadVideo(filePath) {
   if (MOCK) return { text: `[mock video: ${path.basename(filePath)}]` };
   const ai = await client();
+  const sha = createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+  const cache = readCache();
+  if (cache[sha]) {
+    // Files API uploads expire; only reuse one that is still there and ACTIVE.
+    const f = await ai.files.get({ name: cache[sha].name }).catch(() => null);
+    if (f?.state === 'ACTIVE') return { fileData: { fileUri: f.uri, mimeType: f.mimeType } };
+  }
   const mimeType = filePath.endsWith('.webm') ? 'video/webm' : 'video/mp4';
   let file = await ai.files.upload({ file: filePath, config: { mimeType } });
   while (file.state === 'PROCESSING') {
@@ -31,6 +43,8 @@ export async function uploadVideo(filePath) {
     file = await ai.files.get({ name: file.name });
   }
   if (file.state === 'FAILED') throw new Error(`video upload failed: ${filePath}`);
+  fs.mkdirSync(path.dirname(CACHE), { recursive: true });
+  fs.writeFileSync(CACHE, JSON.stringify({ ...readCache(), [sha]: { name: file.name } }, null, 2));
   return { fileData: { fileUri: file.uri, mimeType: file.mimeType } };
 }
 
