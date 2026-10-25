@@ -14,7 +14,7 @@ export function listSourceFiles(root) {
       if (IGNORE_DIRS.has(ent.name)) continue;
       const p = path.join(dir, ent.name);
       if (ent.isDirectory()) walk(p);
-      else if (!IGNORE_EXT.has(path.extname(ent.name)) && ent.name !== 'package-lock.json') out.push(p);
+      else if (!IGNORE_EXT.has(path.extname(ent.name)) && ent.name !== 'package-lock.json' && !ent.name.startsWith('.env')) out.push(p);
     }
   })(root);
   return out.sort();
