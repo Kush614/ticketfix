@@ -1,0 +1,21 @@
+{
+  "title": "Deleting a todo in the Active filter removes the wrong item",
+  "observed_steps": [
+    "00:02 user adds 'Buy milk'",
+    "00:05 user adds 'Walk dog'",
+    "00:08 user adds 'Pay rent'",
+    "00:11 user checks 'Buy milk' as done",
+    "00:14 user clicks the Active filter — list shows 'Walk dog', 'Pay rent'",
+    "00:17 user clicks the × next to 'Pay rent'"
+  ],
+  "expected": "'Pay rent' is removed; 'Walk dog' remains in Active and 'Buy milk' remains in Done.",
+  "actual": "'Walk dog' disappears instead. Switching to All shows 'Buy milk' and 'Pay rent' — 'Walk dog' is gone.",
+  "evidence_timestamps": [
+    "00:17 — × clicked on second row ('Pay rent')",
+    "00:18 — list re-renders with only 'Pay rent' visible",
+    "00:21 — All filter shows 'Buy milk', 'Pay rent'"
+  ],
+  "suspected_files": ["app/public/app.js"],
+  "root_cause_hypothesis": "render() iterates visibleTodos() and binds the delete button to deleteTodo(i) using the index within the FILTERED array, but deleteTodo() calls todos.splice(index, 1) on the UNFILTERED array. When a filter hides earlier items, the indices diverge and the wrong todo is removed. toggleTodo() correctly uses the id; deleteTodo should as well.",
+  "confidence": 0.95
+}

@@ -1,0 +1,21 @@
+{
+  "name": "ticketfix",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Drop a customer's screen recording, get a PR with a failing test, a fix, and a before/after video. Powered by Gemini 4 Argon.",
+  "scripts": {
+    "app": "node app/server.js",
+    "test:app": "playwright test",
+    "fix": "node pipeline/index.js",
+    "fix:mock": "node pipeline/index.js --mock",
+    "reset": "git checkout -- app && rm -f app/tests/ticket-*.spec.js && rm -rf out"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

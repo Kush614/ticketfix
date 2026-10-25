@@ -1,0 +1,6 @@
+node_modules/
+out/
+.env
+tickets/*
+!tickets/ticket-001.webm
+!tickets/.gitkeep
