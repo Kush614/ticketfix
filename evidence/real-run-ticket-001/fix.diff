@@ -1,0 +1,25 @@
+diff --git a/app/public/app.js b/app/public/app.js
+index 6ff468a..290b7d0 100644
+--- a/app/public/app.js
++++ b/app/public/app.js
+@@ -44,9 +44,8 @@ function toggleTodo(id) {
+   render();
+ }
+ 
+-function deleteTodo(index) {
+-  // Remove the todo at this position in the list.
+-  todos.splice(index, 1);
++function deleteTodo(id) {
++  todos = todos.filter(t => t.id !== id);
+   save();
+   render();
+ }
+@@ -86,7 +85,7 @@ function render() {
+     del.className = 'del';
+     del.textContent = '×';
+     del.setAttribute('aria-label', `Delete ${t.title}`);
+-    del.addEventListener('click', () => deleteTodo(i));
++    del.addEventListener('click', () => deleteTodo(t.id));
+ 
+     li.append(cb, span, del);
+     listEl.appendChild(li);
