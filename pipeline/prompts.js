@@ -28,7 +28,7 @@ Rules:
 - The test MUST FAIL on the current (buggy) code and PASS once the bug is fixed.
 - Assert on the user-visible symptom from the recording, not on implementation details.
 - Use the app's existing accessible names / placeholders / roles (read the repo).
-- Start from a clean state (e.g. clear localStorage after navigation if the app uses it).
+- Start from a clean state: read the repo for how (e.g. a reset endpoint, or clearing localStorage after navigation).
 - Toggle checkboxes with .click(), not .check() — the app re-renders the list on change, so .check() times out waiting on a detached node.
 - File path: ${specPath}. Use ESM imports from '@playwright/test'.
 - Keep it under 60 lines.
