@@ -61,6 +61,12 @@ ${output}
 
 The repo snapshot below reflects your current edits. Diagnose and return a corrected fix. Same JSON schema (full file contents).`;
 
+export const FIX_REVIEW = (comparison) => `Your previous fix made the tests pass, but a reviewer WATCHED a recording of the fixed build next to the customer's recording and says the bug is NOT fixed.
+Reviewer's comparison:
+${comparison}
+
+The repo snapshot below reflects your previous edits. Treat the reviewer's observations as ground truth about what the UI does, find what your fix missed, and return a corrected fix. Same JSON schema (full file contents).`;
+
 export const VERIFY = (bug) => `You are now the reviewer. You are given:
 1. The ORIGINAL customer recording (the bug).
 2. A NEW recording of the automated test running against the FIXED build.

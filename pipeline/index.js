@@ -32,8 +32,15 @@ try {
 
   const bug = await analyze({ root, videoPart, log: logged });
   const rep = await reproduce({ root, videoPart, bug, ticketId, log: logged });
-  const fx = await fix({ root, bug, specRel: rep.specRel, spec: rep.spec, log: logged });
-  const verdict = await verify({ bug, originalVideoPart: videoPart, afterVideoPath: fx.afterVideo, diff: fx.diff, log: logged });
+  let fx = await fix({ root, bug, specRel: rep.specRel, spec: rep.spec, log: logged });
+  let verdict = await verify({ bug, originalVideoPart: videoPart, afterVideoPath: fx.afterVideo, diff: fx.diff, log: logged });
+
+  // The reviewer watched the fix and rejected it: one more fix pass with its critique, then re-verify.
+  if (verdict.verdict === 'not_fixed') {
+    logged('🔁 Verifier rejected the fix — sending its critique back to the fixer');
+    fx = await fix({ root, bug, specRel: rep.specRel, spec: rep.spec, feedback: verdict.comparison, log: logged });
+    verdict = await verify({ bug, originalVideoPart: videoPart, afterVideoPath: fx.afterVideo, diff: fx.diff, log: logged });
+  }
 
   if (verdict.verdict !== 'fixed') {
     logged(`⚠️  verifier says "${verdict.verdict}" — not opening a PR. See out/pr/${ticketId}/PR.md`);

@@ -45,8 +45,9 @@ export async function reproduce({ root, videoPart, bug, ticketId, log }) {
   throw new Error('could not write a failing reproduction test');
 }
 
-export async function fix({ root, bug, specRel, spec, log }) {
-  let extra = [];
+export async function fix({ root, bug, specRel, spec, feedback, log }) {
+  // feedback: the verifier's comparison when it rejected a previous fix
+  let extra = feedback ? [{ text: P.FIX_REVIEW(feedback) }] : [];
   for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
     log(`🔧 Writing fix (attempt ${attempt}/${MAX_TRIES})…`);
     const text = await ask({
