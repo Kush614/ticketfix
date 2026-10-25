@@ -1,0 +1,1 @@
+Cell 3 keeps dropping parts on the floor right in front of the bin. Started after the layout change to millimetres.

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cell 3 · pick-and-place</title>
+<style>
+  body { margin: 0; background: #020617; color: #e2e8f0; font: 15px system-ui, sans-serif; }
+  header { display: flex; gap: 24px; align-items: baseline; padding: 14px 20px; }
+  h1 { font-size: 18px; margin: 0; }
+  .stat b { font-size: 20px; }
+  canvas { display: block; margin: 0 auto; max-width: 100%; border-radius: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cell 3 · gantry pick-and-place</h1>
+  <span class="stat">In bin: <b id="in-bin">0</b> / 3</span>
+  <span class="stat">Dropped: <b id="dropped">0</b></span>
+  <span class="stat">Status: <b id="status">Running</b></span>
+</header>
+<canvas id="cell" width="900" height="440"></canvas>
+<script type="module" src="robot/sim.js"></script>
+</body>
+</html>

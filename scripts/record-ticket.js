@@ -1,5 +1,5 @@
 // Records a sample customer ticket against the running app, the way a customer would screen-record it.
-//   node scripts/record-ticket.js [delete|persist|mobile]   (default: delete)
+//   node scripts/record-ticket.js [delete|persist|mobile|robot]   (default: delete)
 // Writes tickets/<ticket>.webm, plus tickets/<ticket>.txt with the customer's one-line message when there is one.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +19,14 @@ async function add(page, titles) {
 }
 
 const SCENARIOS = {
+  // robotics: the pick-and-place cell drops every part on the floor just short of the bin
+  robot: {
+    ticket: 'ticket-robot',
+    path: '/robot.html',
+    note: 'Cell 3 keeps dropping parts on the floor right in front of the bin. Started after the layout change to millimetres.',
+    viewport: { width: 900, height: 520 },
+    async steps() { await sleep(11000); },
+  },
   // front-end logic: deleting under the Active filter removes a different todo
   delete: {
     ticket: 'ticket-001',
@@ -79,7 +87,7 @@ try {
   const ctx = await browser.newContext({ viewport: scenario.viewport, recordVideo: { dir: tmp, size: scenario.viewport } });
   const page = await ctx.newPage();
   await page.request.post(`${URL}/api/reset`);
-  await page.goto(URL);
+  await page.goto(URL + (scenario.path || ''));
   await scenario.steps(page);
 
   const video = page.video();
