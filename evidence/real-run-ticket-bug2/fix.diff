@@ -1,0 +1,12 @@
+diff --git a/app/public/app.js b/app/public/app.js
+index d87232b..6ff468a 100644
+--- a/app/public/app.js
++++ b/app/public/app.js
+@@ -27,7 +27,7 @@ function save() {
+ 
+ function visibleTodos() {
+   if (filter === 'active') return todos.filter(t => !t.done);
+-  if (filter === 'done') return todos.filter(t => !t.done);
++  if (filter === 'done') return todos.filter(t => t.done);
+   return todos;
+ }
